@@ -6,3 +6,6 @@ class WEvaluation(Evaluation):
 
     def evaluationAsave(self):
         pass
+
+    def ProduceClassifications(self):
+        pass
