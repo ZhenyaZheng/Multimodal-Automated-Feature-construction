@@ -7,6 +7,8 @@ import numpy as np
 from Dataset import Dataset
 
 
+
+
 class operatorType(Enum):
     Unary = 1
     Binary = 2
@@ -18,10 +20,10 @@ class outputType(Enum):
     Discrete = 2
     Date = 3
 
-class Operator:
+class Operator(object):
 
     @staticmethod
-    def getSeriesType(column ) -> outputType:
+    def getColumnType(column ) -> outputType:
         if np.issubdtype(column.dtype,np.int64):
             return outputType.Discrete
         elif np.issubdtype(column.dtype,np.float64):
@@ -51,3 +53,5 @@ class Operator:
 
     def isApplicable(self, dataset: Dataset, sourceColumns: List[dk.Series], targetColumns: List[dk.Series]) -> bool:
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
+
+operatorlist = ['Operator'] + [i for i in Operator.__subclass__()]

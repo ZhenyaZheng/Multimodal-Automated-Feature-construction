@@ -1,8 +1,8 @@
 from typing import List
 import dask as dk
 from Dataset import Dataset
-from operator.operator_base import Operator, outputType
-from operator.operator_base import operatorType
+from MAFC_Operator.operator_base import Operator, outputType
+from MAFC_Operator.operator_base import operatorType
 class Unary(Operator):
 
     def __init__(self):
