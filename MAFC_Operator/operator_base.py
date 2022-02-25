@@ -1,4 +1,4 @@
-
+from abc import abstractmethod
 from enum import Enum
 from typing import List
 
@@ -12,8 +12,8 @@ from Dataset import Dataset
 class operatorType(Enum):
     Unary = 1
     Binary = 2
-    GroupByThen = 3
-    TimeBasedGroupByThen = 4
+    GroupBy = 3
+    TimeGroupBy = 4
 
 class outputType(Enum):
     Numeric = 1
@@ -36,22 +36,28 @@ class Operator(object):
     def __init__(self):
         pass
 
+    @abstractmethod
     def getName(self) -> str:
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
+    @abstractmethod
     def getType(self) -> operatorType:
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
+    @abstractmethod
     def getOutputType(self) -> outputType:
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
-    def processTrainingSet(self, dataset: Dataset, sourceColumns: dk.Series, targetColumns):
+    @abstractmethod
+    def processTrainingSet(self, dataset: Dataset, sourceColumns, targetColumns):
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
-    def generate(self, dataset: Dataset, sourceColumns: dk.Series, targetColumns: list) -> dk.Series:
+    @abstractmethod
+    def generateColumn(self, dataset: Dataset, sourceColumns, targetColumns) :
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
-    def isApplicable(self, dataset: Dataset, sourceColumns: List[dk.Series], targetColumns: List[dk.Series]) -> bool:
+    @abstractmethod
+    def isMatch(self, dataset: Dataset, sourceColumns, targetColumns) -> bool:
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
-operatorlist = ['Operator'] + [i for i in Operator.__subclass__()]
+operatorlist = ['Operator'] + [i for i in Operator.__subclasses__()]
