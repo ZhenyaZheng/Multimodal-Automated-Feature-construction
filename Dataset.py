@@ -1,4 +1,6 @@
-
+import cv2
+import dask.dataframe as dd
+import os
 class Dataset:
     def __init__(self,data_path = None):
         '''
@@ -13,24 +15,36 @@ class Dataset:
 
     def read_text(self):
         '''
-
         :return:Dask.Dataframe
         '''
-        pass
+        text_path = self.data_path['text_path']
+        if text_path is None:
+            return None
+        text_data = dd.read_csv("text_data.csv")
+        return text_data
+
 
     def read_image(self):
         '''
-
         :return:cv2
         '''
-        pass
+        image_path = self.data_path['image_path']
+        if image_path is None:
+            return None
+        imgs = []
+        for filename in os.listdir(image_path):
+            img = cv2.imread(image_path+"/"+filename)
+            imgs.append(img)
+        return imgs
 
     def read_tabular(self):
         '''
 
         :return:Dask.Dataframe
         '''
-        pass
+        tabular_path = self.data_path['tabular_path']
+        if tabular_path is None:
+            return None
+        tabular_data = dd.read_csv("tabular_data.csv")
+        return tabular_data
 
-    def __copy__(self):
-        pass
