@@ -1,4 +1,3 @@
-import Dataset
 from MAFC_Operator.Unary.unary import Unary
 from MAFC_Operator.operator_base import outputType
 
@@ -21,11 +20,7 @@ class Discretizer(Unary):
         diff = self.max_float - self.min_float
         #print(diff)
         self.therange = diff // self.upperbound
-        '''cur_min_value = min_float
-        for i in range (0, len(self.upperbound)):
-            self.upperbound[i] = cur_min_value + therange
-            cur_min_value += therange
-        '''
+
 
     def getName(self) -> str:
         return "Discretizer"

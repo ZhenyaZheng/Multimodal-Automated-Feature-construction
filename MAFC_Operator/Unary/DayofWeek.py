@@ -1,4 +1,3 @@
-import Dataset
 from MAFC_Operator.Unary.unary import Unary
 from MAFC_Operator.operator_base import outputType
 

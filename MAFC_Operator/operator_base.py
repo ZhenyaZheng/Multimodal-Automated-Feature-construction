@@ -1,13 +1,6 @@
 from abc import abstractmethod
 from enum import Enum
-from typing import List
-
-import dask as dk
 import numpy as np
-from Dataset import Dataset
-
-
-
 
 class operatorType(Enum):
     Unary = 1
@@ -49,15 +42,15 @@ class Operator(object):
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
     @abstractmethod
-    def processTrainingSet(self, dataset: Dataset, sourceColumns, targetColumns):
+    def processTrainingSet(self, dataset, sourceColumns, targetColumns):
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
     @abstractmethod
-    def generateColumn(self, dataset: Dataset, sourceColumns, targetColumns) :
+    def generateColumn(self, dataset, sourceColumns, targetColumns) :
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
     @abstractmethod
-    def isMatch(self, dataset: Dataset, sourceColumns, targetColumns) -> bool:
+    def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
 
 operatorlist = ['Operator'] + [i for i in Operator.__subclasses__()]
