@@ -12,6 +12,7 @@ class outputType(Enum):
     Numeric = 1
     Discrete = 2
     Date = 3
+    String = 4
 
 class Operator(object):
 
