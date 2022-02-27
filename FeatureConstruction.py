@@ -1,7 +1,9 @@
-from Dataset import Dataset
+import dask
+from MAFC_Operator import *
 import dask
 from Evaluation import *
 from MAFC_Operator import *
+
 
 def Image_FC(image_data):
     '''
@@ -118,8 +120,17 @@ def _FC_(data, isiteration: bool = False, iternums: int = 1, operatorbyself: lis
 
     return df
 
+def Merge_Data(image_data,text_data,tab_data):
+    '''
+    :param image_data:
+    :param text_data:
+    :param tab_data:
+    :return:dask.dataframe
+    '''
+    pass
 
-def FC(dataset: Dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: list = None, operatorignore: list = None):
+
+def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: list = None, operatorignore: list = None):
     '''
     :param operatorignore:
     :param operatorbyself:
@@ -132,6 +143,6 @@ def FC(dataset: Dataset, isiteration: bool = False, iternums: int = 1,operatorby
     image_fc = Image_FC(dataset.data_image)
     text_fc = Text_FC(dataset.data_text)
     ##合并image、text和tabular
-    data = dask.Dataframe()
+    data = Merge_Data(image_fc,text_fc,dataset.data_tabular)
     df = _FC_(data, isiteration, iternums,operatorbyself,operatorignore)
     return df
