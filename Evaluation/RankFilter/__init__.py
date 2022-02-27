@@ -1,1 +1,1 @@
-from RankFilter import RankFilter
+from Evaluation.RankFilter.RankFilter import *

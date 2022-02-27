@@ -1,4 +1,4 @@
-from Evaluation import Evaluation
+from Evaluation.Evaluation import *
 
 class WEvaluation(Evaluation):
     def __init__(self):
