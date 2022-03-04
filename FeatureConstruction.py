@@ -2,7 +2,8 @@ import dask
 from MAFC_Operator import *
 import dask
 from Evaluation import *
-from MAFC_Operator import *
+from MAFC_Operator import OperatorManager
+from propreties.propreties import propreties
 
 
 def Image_FC(image_data):
@@ -11,7 +12,8 @@ def Image_FC(image_data):
     :param image_data:
     :return: dask.Dataframe
     '''
-    pass
+    if image_data is None:
+        return None
 
 
 def Text_FC(text_data):
@@ -19,29 +21,65 @@ def Text_FC(text_data):
     :param text_data:
     :return: dask.Dataframe
     '''
-    pass
+    if text_data is None:
+        return None
 
+def getInfo(data):
+    info = []
+    for i in data:
+        name = i
+        if data[name].dtype == "datetime64[ns]":
+            columninfo = ColumnInfo(None, None, None, name, False, outputType.Date)
+        elif data[name].dtype == "float64":
+            columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
+        elif data[name].dtype == "int64":
+            if len(data[name].value_counts().compute()) >= 100:
+                columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
+            else :
+                columninfo = ColumnInfo(None, None, None, name, False, outputType.Discrete)
+        elif data[name].dtype == "object":
+            seriesdict = {}
+            dictnum = 0
+            datavalues = data[name].value_counts().compute()
+            for thekey in datavalues.keys():
+                seriesdict[thekey] = dictnum
+                dictnum += 1
+            #data[name].compute()
+            data[name] = data[name].replace(to_replace = seriesdict)
+            data[name].astype("int32")
+            columninfo = ColumnInfo(None, None, None, name, False, outputType.Discrete)
+        elif data[name].dtype == "bool":
+            data[name] = data[name].replace({"False": 0, "True": 1, "false": 0, "true": 1})
+            #data[name].compute()
+            data[name].astype("int32")
+            columninfo = ColumnInfo(None, None, None, name, False, outputType.Discrete)
+        info.append(columninfo)
+    #newdata = data.compute()
+    print("getInfo complete")
+    return info
 
-def _FC_Noiter_(data ,operator_list : list):
+def _FC_Noiter_(data ,unaryoperator_list : list,otheroperator_list:list):
     '''
     :param data:
     :param operator_list:
-    :return:
+    :return:{"data":dask.dataframe,"Info":[ColumnInfo]}
     '''
-
+    datainfo = getInfo(data)
+    datadict = {"data": data, "Info": datainfo}
     om = OperatorManager()
     #应用unary操作
-    om.UnaryOperator()
+    operators = om.UnaryOperator(datadict,unaryoperator_list)
     #将构造数据加入数据集
-    om.GenerateAddColumnToData()
+    om.GenerateAddColumnToData(datadict,operators)
     #应用聚集操作
-    om.OtherOperator()
+
+    otheroperators = om.OtherOperator(datadict,otheroperator_list)
     #将构造数据加入数据集
-    om.GenerateAddColumnToData()
+    om.GenerateAddColumnToData(datadict,otheroperators)
+    newdata = data.compute()
+    return datadict
 
-    return data
-
-def _FC_Iter_(data ,operator_list : list,iternums : int):
+def _FC_Iter_(data ,unaryoperator_list : list,otheroperator_list : list,iternums : int):
     '''
     :param data:
     :param operator_list:
@@ -95,7 +133,7 @@ def _FC_Iter_(data ,operator_list : list,iternums : int):
     return data
 
 
-def _FC_(data, isiteration: bool = False, iternums: int = 1, operatorbyself: list = None, operatorignore: list = None):
+def _FC_(data, isiteration: bool = False, iternums: int = 1, operatorbyself: dict = None, operatorignore: dict = None):
     '''
     :param data:
     :param isiteration:
@@ -105,18 +143,22 @@ def _FC_(data, isiteration: bool = False, iternums: int = 1, operatorbyself: lis
     :return:
     '''
 
-    from MAFC_Operator.operator_base import operatorlist
+    unaryoperatorlist = propreties().unaryoperator
+    otheroperatorlist = propreties().otheroperator
+    unaryoperator_list = unaryoperatorlist.copy()
+    otheroperator_list = otheroperatorlist.copy()
     # 选择操作列表
-    operator_list = operatorlist.copy()
     if operatorbyself is not None:
-        operator_list = operator_list + operatorbyself
+        unaryoperator_list = unaryoperator_list + operatorbyself['unary']
+        otheroperator_list = otheroperator_list + operatorbyself['other']
     if operatorignore is not None:
-        operator_list = list(set(operator_list) - set(operatorignore))
+        unaryoperator_list = list(set(unaryoperator_list) - set(operatorignore['unary']))
+        otheroperator_list = list(set(otheroperator_list) - set(operatorignore['other']))
 
     if isiteration is False:
-        df = _FC_Noiter_(data,operator_list)
+        df = _FC_Noiter_(data,unaryoperator_list,otheroperator_list)
     else:
-        df = _FC_Iter_(data,operator_list,iternums)
+        df = _FC_Iter_(data,unaryoperator_list,otheroperator_list,iternums)
 
     return df
 
@@ -127,7 +169,23 @@ def Merge_Data(image_data,text_data,tab_data):
     :param tab_data:
     :return:dask.dataframe
     '''
-    pass
+    if image_data is not None :
+        if text_data is not None:
+            data = image_data.merge(text_data)
+            if tab_data is not None:
+                data = data.merge(tab_data)
+        elif tab_data is not None:
+            data = image_data.merge(tab_data)
+    else:
+        if text_data is not None:
+            data = text_data
+            if tab_data is not None:
+                data = data.merge(tab_data)
+        elif tab_data is not None:
+            data = tab_data
+    return data
+
+
 
 
 def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: list = None, operatorignore: list = None):
