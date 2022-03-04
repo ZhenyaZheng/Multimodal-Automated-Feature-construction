@@ -1,7 +1,9 @@
 
 class propreties:
-    def __init__(self,numOfFolds = 4,randomSeed = 10,DiscretizerBinsNumber = 10 ):
-        self.numOfFolds = numOfFolds #交叉验证折数
-        self.randomSeed = randomSeed
-        self.DiscretizerBinsNumber = DiscretizerBinsNumber #将实数离散化后的类数
+    def __init__(self):
+        self.unaryoperator = ['DayofWeek','Discretizer','HourofDay','IsWeekend','StdOperator']
+        self.otheroperator = ['AddOperator','SubOperator','MultiOperator','DivisOperator','GroupMax','GroupMean','GroupMin','GroupStd','GroupCount']
+        self.DiscretizerBinsNumber = 10 #将实数离散化后的类数
+        self.maxcombination = 2
 
+theproperty = propreties()
