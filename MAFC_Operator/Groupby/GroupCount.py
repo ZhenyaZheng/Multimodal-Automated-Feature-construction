@@ -32,7 +32,7 @@ class GroupCount(Groupby):
         return newcolumn
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-        if super(Groupby,self).isMatch(dataset,sourceColumns,targetColumns):
-            if targetColumns[0]['type'] == outputType.Discrete:
+        if super(GroupCount,self).isMatch(dataset,sourceColumns,targetColumns):
+            if targetColumns[0]['type'] == outputType.Numeric:
                 return True
         return False

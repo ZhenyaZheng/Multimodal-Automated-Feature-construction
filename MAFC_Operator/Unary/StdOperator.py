@@ -28,7 +28,7 @@ class StdOperator(Unary):
         if self.stdval == 0:
             return {"name":name,"data":None}
         def getstd(datas):
-            return [((data - self.meanval) / self.therange) for data in datas]
+            return [((data - self.meanval) / self.stdval) for data in datas]
         columndata = dataset[columnname].map_partitions(getstd,meta = ('getstd','i8'))
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

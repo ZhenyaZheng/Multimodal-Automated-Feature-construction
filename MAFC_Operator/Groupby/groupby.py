@@ -1,8 +1,10 @@
+from abc import ABC
+
 from MAFC_Operator import Operator, operatorType, outputType
 
 
 class Groupby(Operator):
-    def __int__(self):
+    def __init__(self):
         self.mapoper = {"max":0,"min":1,"count":2,"mean":3,"std":4}
 
     def generateName(self,sourcecolumns,targetcolumn):
@@ -33,7 +35,7 @@ class Groupby(Operator):
                 return False
         return True
 
-    def processTrainingSet(self, dataset, sourceColumns, targetColumns):
+    def processTrainingSet(self, dataset, sourceColumns: list, targetColumns: list):
         sname = []
         for sc in sourceColumns:
             sname.append(sc['name'])

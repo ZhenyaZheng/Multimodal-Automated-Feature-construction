@@ -53,5 +53,3 @@ class Operator(object):
     @abstractmethod
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
         raise NotImplementedError("Abstract class Operator shouldn't instanced directly")
-
-operatorlist = ['Operator'] + [i for i in Operator.__subclasses__()]

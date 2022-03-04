@@ -15,7 +15,7 @@ class GroupMax(Groupby):
     def getName(self) -> str:
         return "GroupMax"
 
-    def generateColumn(self,dataset, sourceColumns, targetColumns):
+    def generateColumn(self, dataset, sourceColumns, targetColumns):
         oper = self.mapoper["max"]
 
         def getmax(df, sourceColumns):
@@ -33,7 +33,7 @@ class GroupMax(Groupby):
         return newcolumn
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-        if super(Groupby,self).isMatch(dataset,sourceColumns,targetColumns):
-            if targetColumns[0]['type'] == outputType.Discrete:
+        if super(GroupMax,self).isMatch(dataset,sourceColumns,targetColumns):
+            if targetColumns[0]['type'] == outputType.Numeric:
                 return True
         return False

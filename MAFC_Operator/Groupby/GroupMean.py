@@ -4,7 +4,7 @@ from MAFC_Operator.operator_base import outputType
 
 class GroupMean(Groupby):
     def __init__(self):
-        super(GroupMean,self).__init__()
+        super(GroupMean, self).__init__()
 
     def requiredInputType(self) -> outputType:
         return outputType.Discrete
@@ -32,7 +32,7 @@ class GroupMean(Groupby):
         return newcolumn
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-        if super(Groupby,self).isMatch(dataset,sourceColumns,targetColumns):
-            if targetColumns[0]['type'] == outputType.Discrete:
+        if super(GroupMean,self).isMatch(dataset,sourceColumns,targetColumns):
+            if targetColumns[0]['type'] == outputType.Numeric:
                 return True
         return False
