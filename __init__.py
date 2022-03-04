@@ -1,2 +1,3 @@
-from Dataset import Dataset
+from Dataset import *
 from FeatureConstruction import FC
+from MAFC_Operator import *
