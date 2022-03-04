@@ -20,7 +20,7 @@ class Dataset:
         text_path = self.data_path['text_path']
         if text_path is None:
             return None
-        text_data = dd.read_csv("text_data.csv")
+        text_data = dd.read_csv(text_path)
         return text_data
 
 
@@ -33,7 +33,7 @@ class Dataset:
             return None
         imgs = []
         for filename in os.listdir(image_path):
-            img = cv2.imread(image_path+"/"+filename)
+            img = cv2.imread(os.path.join(image_path,filename))
             imgs.append(img)
         return imgs
 
@@ -45,6 +45,6 @@ class Dataset:
         tabular_path = self.data_path['tabular_path']
         if tabular_path is None:
             return None
-        tabular_data = dd.read_csv("tabular_data.csv")
+        tabular_data = dd.read_csv(tabular_path)
         return tabular_data
 
