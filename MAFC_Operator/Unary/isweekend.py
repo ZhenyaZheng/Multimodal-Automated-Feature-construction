@@ -35,7 +35,7 @@ class IsWeekend(Unary):
         return False
 
     def getNumofBins(self) -> int:
-        return 24
+        return 2
 
     def getName(self):
         return "IsWeekend"

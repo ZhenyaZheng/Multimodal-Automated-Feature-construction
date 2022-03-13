@@ -1,14 +1,17 @@
 
 
 class ColumnInfo:
-    def __init__(self,sourcecolumns,targetcolumns,operator,name,istargetclass,type):
+    def __init__(self,sourcecolumns,targetcolumns,operator,name,istargetclass,type,numsofunique = None):
         self.sourcecolumns = sourcecolumns
         self.targetcolumns = targetcolumns
         self.operator = operator
         self.name = name
         self.istargetclass = istargetclass
         self.type = type
+        self.numsofunique = numsofunique
 
+    def getNumsOfUnique(self):
+        return self.numsofunique
 
     def getName(self):
         return self.name

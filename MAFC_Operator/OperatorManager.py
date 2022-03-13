@@ -1,7 +1,7 @@
 import datetime
-
+import numpy as np
 from MAFC_Operator.Operators import Operators
-from propreties.propreties import theproperty
+from properties.properties import theproperty
 import pandas as pd
 from MAFC_Operator.ColumnInfo import ColumnInfo
 from MAFC_Operator.Combination import Combination
@@ -55,7 +55,10 @@ class OperatorManager:
             for nc in newcolumn:
                 newcolumndata += nc
             datadict["data"] = datadict["data"].merge(pd.DataFrame(data = newcolumndata,columns=[newcolumnname]))
-            datadict["Info"].append(ColumnInfo(os.sourceColumns, os.targetColumns, os.operator, newcolumnname, True, os.getType()))
+            if os.getType() == outputType.Discrete:
+                datadict["Info"].append(ColumnInfo(os.sourceColumns, os.targetColumns, os.operator, newcolumnname, True, os.getType(),len(np.unique(newcolumndata))))
+            else:
+                datadict["Info"].append(ColumnInfo(os.sourceColumns, os.targetColumns, os.operator, newcolumnname, True, os.getType()))
         print("GenerateAddColumnToData complete")
 
     def OtherOperator(self,data,operatorlist):

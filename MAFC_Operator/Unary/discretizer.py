@@ -1,9 +1,9 @@
 from MAFC_Operator.Unary.unary import Unary
 from MAFC_Operator.operator_base import outputType
-from propreties.propreties import *
+from properties.properties import *
 
 class Discretizer(Unary):
-    def __init__(self, upperbound=propreties(). DiscretizerBinsNumber):
+    def __init__(self, upperbound=properties(). DiscretizerBinsNumber):
         self.upperbound = upperbound
 
     def requiredInputType(self) -> outputType:
