@@ -49,3 +49,9 @@ class Operators:
 
     def setWScore(self,wscore):
         self.wrapperscore = wscore
+
+    def __gt__(self, other):
+        return self.filterscore > other.filterscore
+
+    def __eq__(self, other):
+        return self.getName() == other.getName() and self.getType() == other.getType()

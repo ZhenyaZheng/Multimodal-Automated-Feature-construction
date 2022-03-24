@@ -1,6 +1,8 @@
+import copy
 import datetime
 import numpy as np
 from MAFC_Operator.Operators import Operators
+from logger.logger import logger
 from properties.properties import theproperty
 import pandas as pd
 from MAFC_Operator.ColumnInfo import ColumnInfo
@@ -12,6 +14,14 @@ from MAFC_Operator.Groupby import *
 class OperatorManager:
     def __init__(self):
         pass
+    def addColumn(self, datadict, candidateatt):
+        '''
+        :param datadict:
+        :param candidateatt:(name,data)
+        :return:
+        '''
+        datadict["data"][candidateatt[0]] = candidateatt[1]
+        datadict["Info"].append(candidateatt[2])
 
     def UnaryOperator(self, data,unaryoperatorlist):
         '''
@@ -21,10 +31,10 @@ class OperatorManager:
         '''
         unaryoperators = [self.getUnaryOperator(unaryoperator) for unaryoperator in unaryoperatorlist]
         operators = self.getOperators(data,unaryoperators,theproperty.maxcombination)
-        print("UnaryOperator complete")
+        logger.Info("UnaryOperator complete")
         return operators
 
-    def generateColumn(self, data, os: Operators):
+    def generateColumn(self, data, os: Operators, needcompute: bool = True):
         '''
         :param data: data
         :param os:Operators
@@ -35,8 +45,16 @@ class OperatorManager:
         tcdict = [{"name": tc.getName(), "type": tc.getType()} for tc in os.targetColumns]
         operator.processTrainingSet(data, scdict, tcdict)
         newcolumn = operator.generateColumn(data, scdict, tcdict)
-        newcolumndata = newcolumn["data"].compute()
-        return newcolumn['name'],newcolumndata
+        newcolumndata = newcolumn["data"]
+        columninfo = None
+        if needcompute == True:
+            newcolumndata = newcolumndata.compute()
+        if os.getType() == outputType.Discrete:
+            lensofvalues = len(newcolumn["data"].value_counts().compute())
+            columninfo = ColumnInfo(os.sourceColumns, os.targetColumns,operator, os.getName(),False, os.getType(), lensofvalues)
+        else:
+            columninfo = ColumnInfo(os.sourceColumns, os.targetColumns, operator, os.getName(), False, os.getType())
+        return newcolumn['name'], newcolumndata, columninfo
 
 
     def GenerateAddColumnToData(self,datadict,operators):
@@ -50,18 +68,18 @@ class OperatorManager:
         for os in operators:
             print("this is ",num," / ",osnums," and time is ",datetime.datetime.now())
             num += 1
-            newcolumnname, newcolumn = self.generateColumn(datadict["data"], os)
-            newcolumndata = []
-            for nc in newcolumn:
+            newcolumn = (self.generateColumn(datadict["data"], os))
+            '''newcolumndata = []
+            for nc in newcolumn[1]:
                 newcolumndata += nc
-            datadict["data"] = datadict["data"].merge(pd.DataFrame(data = newcolumndata,columns=[newcolumnname]))
-            if os.getType() == outputType.Discrete:
-                datadict["Info"].append(ColumnInfo(os.sourceColumns, os.targetColumns, os.operator, newcolumnname, True, os.getType(),len(np.unique(newcolumndata))))
-            else:
-                datadict["Info"].append(ColumnInfo(os.sourceColumns, os.targetColumns, os.operator, newcolumnname, True, os.getType()))
-        print("GenerateAddColumnToData complete")
+            datadict["data"] = datadict["data"].merge(pd.DataFrame(data = newcolumndata, columns=[newcolumn[0]]))
+            
+            datadict["Info"].append(newcolumn[2])
+            '''
+            self.addColumn(datadict, newcolumn)
+        logger.Info("GenerateAddColumnToData complete")
 
-    def OtherOperator(self,data,operatorlist):
+    def OtherOperator(self, data, operatorlist):
         '''
         :param data: {"data":data,"Info":[ColumnInfo]}
         :param operatorlist: ["operator"]
@@ -69,7 +87,7 @@ class OperatorManager:
         '''
         otheroperators = [self.getOtherOperator(operator) for operator in operatorlist]
         operators = self.getOperators(data, otheroperators, theproperty.maxcombination)
-        print("OtherOperator complete")
+        logger.Info("OtherOperator complete")
         return operators
 
     def getCombination(self, attributes:list, numsofcombination):
@@ -192,3 +210,31 @@ class OperatorManager:
                         addoperators.append(addops)
         theoperators = theoperators + addoperators
         return theoperators
+
+    def reCalcFEvaluationScores(self, datadict, operators, fevaluation):
+        if fevaluation.needToRecalcScore() == False:
+            return ;
+        else:
+            self.calculateFsocre(datadict, fevaluation,operators)
+
+    def calculateFsocre(self, datadict, fevaluation, operators: list[Operators]):
+        numOfThread = theproperty.numofthread
+        count = 0
+        if numOfThread == 1:
+            for ops in operators:
+                datacopy = copy.deepcopy(datadict)
+                count += 1
+                if count % 1000 == 0:
+                    logger.Info("analyzed ", count, " attributes")
+                newcolumn = (self.generateColumn(datacopy, ops))
+                if newcolumn[1] == None or fevaluation == None:
+                    logger.Error("generate column or fevaluation error!")
+                newfevaluation = copy.deepcopy(fevaluation)
+
+                templist = [newcolumn]
+
+                newfevaluation.initFEvaluation(templist)
+                fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
+                ops.setFScore(fsocre)
+        else:
+            pass
