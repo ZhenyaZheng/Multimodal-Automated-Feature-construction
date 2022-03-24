@@ -1,7 +1,7 @@
 
 
 class AttributeInfo:
-    def __init__(self,name,type,value,numsofvalues):
+    def __init__(self, name, type, value, numsofvalues):
         self.name = name
         self.type = type
         self.value = value

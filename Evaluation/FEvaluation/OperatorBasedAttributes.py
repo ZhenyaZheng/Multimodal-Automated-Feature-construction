@@ -1,3 +1,4 @@
+import copy
 import os
 import pandas as pd
 import numpy as np
@@ -19,19 +20,20 @@ class OperatorBasedAttributes:
     def getOperatorsBasedAttributes(self, datadict, oa, evaluationatt):
         '''
         为所生成属性的“父级”生成元特征，这些元特征不需要计算要计算的生成属性的值
-        :param datadict: 
+        :param evaluationatt: (name,data)
+        :param datadict:
         :param oa: 
-        :return: 
+        :return: {}
         '''
         try:
-            datadictReplica = datadict.replicateDataset()
+            datacopy = copy.deepcopy(datadict)
             #留坑
-            datadictReplica.addColumn(evaluationatt)
+            datacopy["data"][evaluationatt[0]] = evaluationatt[1]
             tempList = []
             tempList.append(evaluationatt)
             igfe = InformationGainFilterEvaluator()
             igfe.initFEvaluation(tempList)
-            self.IGScore = igfe.produceScore(datadictReplica, None, None, None)
+            self.IGScore = igfe.produceScore(datacopy, None, None, None)
 
             self.ProcessOperators(oa)
 

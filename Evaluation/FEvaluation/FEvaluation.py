@@ -1,15 +1,13 @@
 from Evaluation.Evaluation import *
-from Evaluation.FEvaluation.OperatorBasedAttributes import DatasetBasedAttributes
-from Evaluation.FEvaluation.MLAttributeManager import MLAttributeManager
-from logger.logger import logger
-from properties.properties import theproperty
+
 
 
 class FEvaluation(Evaluation):
-    def __init__(self, datadict):
+    def __init__(self):
         super(FEvaluation, self).__init__()
         self.analycolumns = []
 
+    @abstractmethod
     def recalculateDatasetBasedFeatures(self,datadict):
         pass
 
@@ -20,10 +18,14 @@ class FEvaluation(Evaluation):
     def needToRecalcScore(self) -> bool:
         pass
 
-    def discretizeColumns(self,datadict):
-        pass
+    def discretizeColumns(self, datadict, bins):
+        for acs in self.analycolumns:
+            pass
+
 
     def initFEvaluation(self,columntoanalyze):
         self.analycolumns = columntoanalyze
+
+
 
 

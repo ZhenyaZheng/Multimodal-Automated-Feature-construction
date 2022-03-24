@@ -1,2 +1,2 @@
-from Evaluation.Classification import ClassificationItem
-from Evaluation.Classification import ClassificationResults
+from Evaluation.Classification.ClassificationItem import ClassificationItem
+from Evaluation.Classification.ClassificationResults import ClassificationResults

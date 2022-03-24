@@ -1,4 +1,5 @@
-from Evaluation import FEvaluation
+import copy
+from Evaluation.FEvaluation.FEvaluation import FEvaluation
 from Evaluation.FEvaluation.AttributeInfo import AttributeInfo
 from Evaluation.FEvaluation.OperatorBasedAttributes import  OperatorBasedAttributes
 from Evaluation.FEvaluation.DatasetAttributes import DatasetAttributes
@@ -12,13 +13,13 @@ class MLFEvaluation(FEvaluation):
     def __init__(self, datadict):
         super(MLFEvaluation, self).__init__()
         self.classifier = None
-        self.evalution = None
+        self.evaluation = None
         self.datasetAttriutes = {}
         self.initBackModel(datadict)
 
 
     def initBackModel(self, datadict):
-        logger.Info("Initializing Background Model for dataset " + datadict['data'].name)
+        logger.Info("Initializing Background Model for dataset ", datadict["data"].name)
         self.mla = MLAttributeManager()
         self.classifier = self.mla.getBackClassificationModel(datadict)
 
@@ -26,7 +27,18 @@ class MLFEvaluation(FEvaluation):
         self.datasetAttributes = self.dba.getDatasetBasedFeature(datadict, theproperty.classifier)
 
     def recalculateDatasetBasedFeatures(self, datadict):
-        self.datasetAttributes = self.dba.getDatasetBasedFeature(datadict, theproperty.classifier)
+        datadictcopy = copy.deepcopy(datadict)
+        index = 0
+        targetcolumn = datadictcopy["target"]
+
+        while index < len(datadictcopy["Info"]):
+            if datadictcopy["Info"][index].getName() == targetcolumn.name:
+                break
+            index += 1
+        if index != len(datadictcopy["Info"]):
+            datadictcopy["Info"].pop(index)
+        #del datadictcopy["data"][targetcolumn.name]
+        self.datasetAttributes = self.dba.getDatasetBasedFeature(datadictcopy, theproperty.classifier)
 
     def setClassifier(self, classifier):
         self.classifier = classifier
@@ -35,7 +47,7 @@ class MLFEvaluation(FEvaluation):
         self.datasetAttributes = datasetAttributes
 
     def setEvalution(self, evalution):
-        self.evalution = evalution
+        self.evaluation = evalution
 
     def produceScore(self, datadict, currentScore, oa, candidateAttribute):
         if self.classifier == None:
@@ -49,9 +61,9 @@ class MLFEvaluation(FEvaluation):
         testInstances = self.mla.generateValuesData(candidateAttributes)
         testInstances.setClassIndex(len(testInstances) - 1)
         #初始化评估器
-        #self.evalution = Evaluation(testInstances)
+        #self.evaluation = Evaluation(testInstances)
 
-        #self.evalution.evaluateModel(self.classifier,testInstances)
+        #self.evaluation.evaluateModel(self.classifier,testInstances)
         #预测
         #计算得分
         score = 0
@@ -61,10 +73,11 @@ class MLFEvaluation(FEvaluation):
         return True
 
     def getEvalutionScoringMethod(self):
-        return self.evalutionScoringMethod.ClassifierProbability
+        return self.evaluationScoringMethod.ClassifierProbability
 
     def getClassifier(self):
         return self.classifier
 
     def getEvalution(self):
-        return self.evalution
+        return self.evaluation
+

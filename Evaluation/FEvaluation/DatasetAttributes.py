@@ -1,14 +1,13 @@
+import copy
 import numpy as np
-import dask.dataframe as dd
 import pandas as pd
 import scipy
 import scipy.stats
-from AttributeInfo import AttributeInfo
+from Evaluation.FEvaluation.AttributeInfo import AttributeInfo
 from Evaluation.WEvaluation.AucWrapperEvaluation import AucWrapperEvaluation
-from MAFC_Operator import ColumnInfo
-from MAFC_Operator.operator_base import Operator, outputType
+from MAFC_Operator.operator_base import outputType
 from MAFC_Operator.Unary.discretizer import Discretizer
-from InformationGain import InformationGainFilterEvaluator
+from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
 from logger.logger import logger
 from properties.properties import theproperty
 
@@ -32,7 +31,7 @@ class DatasetAttributes:
         self.stdNumOfDiscreteValuesPerAttribute: float
 
         # 数据集的统计学特征
-        self.PrecisionAtFixedRecallValues: dict
+        self.FMeasureValues: float
         self.logLossValues: float
         self.aucValues: float
 
@@ -77,7 +76,7 @@ class DatasetAttributes:
         获取数据集的基本特征
         :param datadict:
         :param classifier:
-        :return:
+        :return:dict
         '''
         try:
             self.processGeneralDatasetInfo(datadict)
@@ -150,17 +149,18 @@ class DatasetAttributes:
         :param classifier:
         :return:
         '''
+        wrapperEvaluator = None
         wrapperName = 'AucWrapperEvaluator'
         if wrapperName == 'AucWrapperEvaluator':
             wrapperEvaluator = AucWrapperEvaluation()
         else:
             logger.Error('Wrapper Error')
 
-        classificationResult = wrapperEvaluator.produceClassificationResults(datadict, classifier)
+        classificationResult = wrapperEvaluator.ProduceClassifications(datadict, classifier)
 
         self.aucValues = classificationResult.getAuc()
         self.logLossValues = classificationResult.getLogLoss()
-        self.PrecisionAtFixedRecallValues = classificationResult.getRecallPrecisionValues()
+        self.FMeasureValues = classificationResult.getFMeasureValues()
 
     def processEntropyBasedMeasures(self, datadict):
         '''
@@ -173,17 +173,17 @@ class DatasetAttributes:
         IGScoresPerNumericColumnIndex = []
 
         ige = InformationGainFilterEvaluator()
+        data = datadict["data"]
+        for idx in data.columns:
+            ci = data[idx]
 
-        for idx in datadict.columns:
-            ci = datadict[idx]
-
-            if ci.dtype != "float64" or ci.dtype != "float32" or ci.dtype != "int64" or ci.dtype != "int32":
+            if ci.dtype != "float64" and ci.dtype != "float32" and ci.dtype != "int64" and ci.dtype != "int32":
                 continue
 
             indicedList = []
             indicedList.append(idx)
             # 此处留坑
-            replicatedDataset = datadict.copy()
+            replicatedDataset = copy.deepcopy(datadict)
             tempList = []
             tempList.append(ci)
             ige.initFEvaluation(tempList)
@@ -322,7 +322,7 @@ class DatasetAttributes:
     def generateDatasetAttributesMap(self):
         '''
         生成字典
-        :return:
+        :return: dict
         '''
         attributes = {}
 
@@ -377,11 +377,9 @@ class DatasetAttributes:
         attributes[len(attributes)] = AttributeInfo("stdChiSquareValueForDiscreteAndDiscreteAttributes", outputType.Numeric,
                               self.stdChiSquareValueForDiscreteAndDiscreteAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("minorityClassPercentage", outputType.Numeric, self.minorityClassPercentage, -1)
-
-
-        for key in self.PrecisionAtFixedRecallValues.keys():
-            attributes[len(attributes)] = AttributeInfo("PrecisionAtFixedRecallValues" + str(key), outputType.Numeric,
-                                            self.PrecisionAtFixedRecallValues[key], -1)
+        
+        attributes[len(attributes)] = AttributeInfo("FMeasureValues" , outputType.Numeric,
+                                            self.FMeasureValues, -1)
 
         return attributes
 
