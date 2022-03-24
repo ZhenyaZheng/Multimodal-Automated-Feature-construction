@@ -1,63 +1,9 @@
-import dask
-from MAFC_Operator import *
-import dask
+import copy
+from utils import *
 from Evaluation import *
 from MAFC_Operator import OperatorManager
-from properties.properties import properties
+from properties.properties import properties, theproperty
 
-
-def Image_FC(image_data):
-    '''
-
-    :param image_data:
-    :return: dask.Dataframe
-    '''
-    if image_data is None:
-        return None
-
-
-def Text_FC(text_data):
-    '''
-    :param text_data:
-    :return: dask.Dataframe
-    '''
-    if text_data is None:
-        return None
-
-def getInfo(data):
-    info = []
-    for i in data:
-        name = i
-        if data[name].dtype == "datetime64[ns]":
-            columninfo = ColumnInfo(None, None, None, name, False, outputType.Date)
-        elif data[name].dtype == "float64":
-            columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
-        elif data[name].dtype == "int64":
-            lensofvalues = len(data[name].value_counts().compute())
-            if lensofvalues >= 100:
-                columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
-            else :
-                columninfo = ColumnInfo(None, None, None, name, False, outputType.Discrete,lensofvalues)
-        elif data[name].dtype == "object":
-            seriesdict = {}
-            dictnum = 0
-            datavalues = data[name].value_counts().compute()
-            for thekey in datavalues.keys():
-                seriesdict[thekey] = dictnum
-                dictnum += 1
-            #data[name].compute()
-            data[name] = data[name].replace(to_replace = seriesdict)
-            data[name].astype("int32")
-            columninfo = ColumnInfo(None, None, None, name, False, outputType.Discrete,len(seriesdict))
-        elif data[name].dtype == "bool":
-            data[name] = data[name].replace({"False": 0, "True": 1, "false": 0, "true": 1})
-            #data[name].compute()
-            data[name].astype("int32")
-            columninfo = ColumnInfo(None, None, None, name, False, outputType.Discrete,2)
-        info.append(columninfo)
-    #newdata = data.compute()
-    print("getInfo complete")
-    return info
 
 def _FC_Noiter_(datadict ,unaryoperator_list : list,otheroperator_list:list):
     '''
@@ -75,77 +21,104 @@ def _FC_Noiter_(datadict ,unaryoperator_list : list,otheroperator_list:list):
     otheroperators = om.OtherOperator(datadict,otheroperator_list)
     #将构造数据加入数据集
     om.GenerateAddColumnToData(datadict,otheroperators)
-    newdata = datadict['data'].compute()
-    return datadict
+    #newdata = datadict['data'].compute()
+    return datadict['data']
 
-def _FC_Iter_(datadict ,unaryoperator_list : list,otheroperator_list : list,iternums : int):
+
+def _FC_Iter_(datadict, unaryoperator_list : list,otheroperator_list : list,iternums : int):
     '''
-    :param data:
+    :param datadict: Dict[list(ColumnInfo), dask.dataframe]
     :param operator_list:
     :param iternums:
     :return:
     '''
     #初始化评估模型
-    F_evaluation = FEvaluation()
-    W_evaluation = WEvaluation()
+    fevaluation = getEvaluation(theproperty.filter, datadict)
+    wevaluation = getEvaluation(theproperty.wrapper, datadict)
 
     #进行初始评估
-    W_evaluation.evaluationAsave()
-    currentscore = W_evaluation.PredictScore()
-
-    currentclassifications = W_evaluation.ProduceClassifications()
+    wevaluation.evaluationAsave()
+    currentscore = wevaluation.produceScore()
+    logger.Info("Initial score is : ", currentscore)
+    #计算
+    currentclassifications = wevaluation.ProduceClassifications(datadict, theproperty.classifier)
 
     #复制数据集
-    datacopy = datadict.copy()
-
+    datasetcopy = copy.deepcopy(datadict)
     om = OperatorManager()
     # 应用unary操作
-    operators = om.UnaryOperator(datadict,unaryoperator_list)
+    operators = om.UnaryOperator(datasetcopy, unaryoperator_list)
     # 将构造数据加入数据集
-    om.GenerateAddColumnToData(datadict,operators)
+    om.GenerateAddColumnToData(datasetcopy, operators)
 
     #初始化排序类
     rankerFilter = RankFilter()
-
+    #不应该重复添加
+    columnaddpreiter = None
+    totalnumofwrapperevaluation = 0
+    evaluationatts = 0
+    chosenoperators = None
+    toprankingoperators = None
     while iternums:
         #重新计算基本特征
-        F_evaluation.reCalcDataBasedFeatures();
+        fevaluation.recalculateDatasetBasedFeatures(datasetcopy);
         #重新使用F计算分数
-        om.reCalcFEvaluationScores()
+        om.reCalcFEvaluationScores(datasetcopy, operators, fevaluation)
 
         # 构造特征
         # 应用聚集操作
-        otheroperator = om.OtherOperator()
+        otheroperators = om.OtherOperator(datasetcopy, otheroperator_list)
 
         #排序
-        otheroperator = rankerFilter.rankAndFilter(otheroperator)
+        otheroperators = rankerFilter.rankAndFilter(otheroperators, columnaddpreiter)
 
-        #使用W计算分数
-        for i in otheroperator:
-            W_evaluation.PredictScore()
+        evaluationatts = 0
+        chosenoperators = None
+        toprankingoperators = []
+        tempcurrentclassifications = currentclassifications
+        #使用W计算分数,并行计算
+        numofthread = theproperty.thread
+        if numofthread == 1:
+            for oop in otheroperators:
+                if(oop.getFScore() != None and oop.getFScore() >= theproperty.fsocre and evaluationatts <= theproperty.maxevaluationattsperiter):
+                    datacopy = copy.deepcopy(datasetcopy)
+                    newcolumn = (om.generateColumn(datacopy, oop, False))
+                    wsocre = wevaluation.produceScore(datasetcopy, tempcurrentclassifications, oop, newcolumn)
+                    oop.setWScore(wsocre)
+                    evaluationatts += 1
+                    if 0 < wsocre:
+                        toprankingoperators.append(oop)
 
+                    if(evaluationatts % 100 == 0):
+                        logger.Info("evaluated ", evaluationatts, " attributes")
+        else:
+            pass
         # 筛选特征
+        totalnumofwrapperevaluation += evaluationatts
+        if chosenoperators == None:
+            if toprankingoperators != None:
+                chosenoperators = copy.deepcopy(toprankingoperators)
+            else:
+                logger.Info("No attributes are chosen,iteration over!")
+                break
 
-
-
+        om.GenerateAddColumnToData(datadict, chosenoperators)
+        currentclassifications = wevaluation.ProduceClassifications(datadict, theproperty.classifier)
+        wevaluation.evaluationAsave()
         iternums = iternums - 1
+    return datadict['data']
 
 
-
-    return datadict
-
-
-def _FC_(data, isiteration: bool = False, iternums: int = 1, operatorbyself: dict = None, operatorignore: dict = None):
+def _FC_(datadict, isiteration: bool = False, iternums: int = 1, operatorbyself: dict = None, operatorignore: dict = None):
     '''
-    :param data:
+    :param datadict:
     :param isiteration:
     :param iternums:
     :param operatorbyself:
     :param operatorignore:
     :return:
     '''
-    datainfo = getInfo(data)
-    datadict = {"data": data, "Info": datainfo}
+
     unaryoperatorlist = properties().unaryoperator
     otheroperatorlist = properties().otheroperator
     unaryoperator_list = unaryoperatorlist.copy()
@@ -186,9 +159,21 @@ def Merge_Data(image_data,text_data,tab_data):
                 data = data.merge(tab_data)
         elif tab_data is not None:
             data = tab_data
+    data.name = theproperty.datasetname
     return data
 
-
+def getDatadict(dataset):
+    # image_fc,text_fc需要支持自定义构造
+    image_fc = Image_FC(dataset.data_image)
+    text_fc = Text_FC(dataset.data_text)
+    ##合并image、text和tabular
+    data = Merge_Data(image_fc, text_fc, dataset.data_tabular)
+    datainfo = getInfo(data)
+    datadict = {"data": data, "Info": datainfo}
+    index = theproperty.targetindex
+    datadict["target"] = datadict["data"].iloc[:, index]
+    del datadict["data"][datadict["target"].name]
+    return datadict
 
 
 def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: list = None, operatorignore: list = None):
@@ -200,10 +185,6 @@ def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: lis
     :param isiteration: 是否进行迭代
     :return: dask.Dataframe
     '''
-    #image_fc,text_fc需要支持自定义构造
-    image_fc = Image_FC(dataset.data_image)
-    text_fc = Text_FC(dataset.data_text)
-    ##合并image、text和tabular
-    data = Merge_Data(image_fc,text_fc,dataset.data_tabular)
-    df = _FC_(data, isiteration, iternums,operatorbyself,operatorignore)
+    datadict = getDatadict(dataset)
+    df = _FC_(datadict, isiteration, iternums,operatorbyself,operatorignore)
     return df
