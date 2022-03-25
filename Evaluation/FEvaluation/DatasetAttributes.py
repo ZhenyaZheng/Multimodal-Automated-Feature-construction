@@ -184,8 +184,16 @@ class DatasetAttributes:
             indicedList.append(idx)
             # 此处留坑
             replicatedDataset = copy.deepcopy(datadict)
+            column = None
+            for cl in datadict["info"]:
+                if cl.getName() == ci.name:
+                    column = cl
+                    break
+            if column == None:
+                logger.Error(ci.name, "columninfo is not exist")
+            newcolumn = (ci.name, ci, column)
             tempList = []
-            tempList.append(ci)
+            tempList.append(newcolumn)
             ige.initFEvaluation(tempList)
             score = ige.produceScore(replicatedDataset, None, None, None)
             IGScoresPerColumnIndex.append(score)

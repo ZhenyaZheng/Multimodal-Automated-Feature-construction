@@ -1,7 +1,10 @@
 import math
 
-from Evaluation.FEvaluation.FEvaluation import FEvaluation
+import numpy as np
+from dask_ml.model_selection import train_test_split
 
+from Evaluation.FEvaluation.FEvaluation import FEvaluation
+from logger.logger import logger
 from Evaluation.Evaluation import evalutionScoringMethod
 class InformationGainFilterEvaluator(FEvaluation):
 
@@ -16,22 +19,34 @@ class InformationGainFilterEvaluator(FEvaluation):
 
         bins = 10
         super(InformationGainFilterEvaluator, self).discretizeColumns(analyzedDatasets, bins)
-
         self.valuesPerKey = {}
-        targetcolumn = analyzedDatasets['target']
-        self.valuesPerKey = dict(targetcolumn.value_counts().compute())
-        return self.calculateIG(analyzedDatasets["data"])
+        X_train, X_test, y_train, y_test = train_test_split(analyzedDatasets["data"], analyzedDatasets["target"], test_size=0.3)
+        for index, value in zip(y_test.index, y_test):
+            indexlist = []
+            for cl in self.analycolumns:
+                val = cl[1][index].compute()
+                indexlist.append(val)
+            indexkey = tuple(indexlist)
+            if self.valuesPerKey.get(indexkey) == None:
+                numofunique = cl[2].getNumsOfUnique()
+                if numofunique == None:
+                    logger.Error(cl[0], "Discrete Column is not exist numsofunique")
+                self.valuesPerKey[indexkey] = list(np.zeros(numofunique))
+            self.valuesPerKey[value] += 1
+
+        return self.calculateIG(X_train)
 
 
     def calculateIG(self, dataset):
         IG = 0.0
-        numOfInstances = sum(self.valuesPerKey.values())
-        tempIG = 0
         for val in self.valuesPerKey.values():
-            if val != 0:
-                tempIG += -((val / numOfInstances) * math.log10(val / numOfInstances))
+            numOfInstances = sum(val)
+            tempIG = 0
+            for va in val:
+                if va != 0:
+                    tempIG += -((va / numOfInstances) * math.log10(va / numOfInstances))
 
-        IG += (numOfInstances/len(dataset)) * tempIG
+            IG += (numOfInstances / len(dataset)) * tempIG
         return IG
 
 

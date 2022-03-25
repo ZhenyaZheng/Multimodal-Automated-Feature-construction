@@ -33,7 +33,7 @@ class WEvaluation(Evaluation):
         model = self.getClassifier(classifiername)
         client = Client()
         X_train, X_test, y_train, y_test = train_test_split(copydata, y, test_size=0.3)
-        lens = (len(copydata), len(X_train), len(X_test), len(y_train), len(y_test))
+        #lens = (len(copydata), len(X_train), len(X_test), len(y_train), len(y_test))
         clf = ParallelPostFit(model, scoring="r2")
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)

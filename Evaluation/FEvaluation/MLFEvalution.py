@@ -7,7 +7,7 @@ from Evaluation.FEvaluation.MLAttributeManager import MLAttributeManager
 from logger.logger import logger
 from properties.properties import theproperty
 from MAFC_Operator.operator_base import outputType
-
+import dask.dataframe
 
 class MLFEvaluation(FEvaluation):
     def __init__(self, datadict):
@@ -21,7 +21,7 @@ class MLFEvaluation(FEvaluation):
     def initBackModel(self, datadict):
         logger.Info("Initializing Background Model for dataset ", datadict["data"].name)
         self.mla = MLAttributeManager()
-        self.classifier = self.mla.getBackClassificationModel(datadict)
+        self.classifier = self.mla.getBackgroundClassificationModel(datadict)
 
         self.dba = DatasetAttributes()
         self.datasetAttributes = self.dba.getDatasetBasedFeature(datadict, theproperty.classifier)
@@ -54,19 +54,19 @@ class MLFEvaluation(FEvaluation):
             logger.Error("Classifier is not initialized")
         oba = OperatorBasedAttributes()
         candidateAttributes = oba.getOperatorsBasedAttributes()
-        for das in self.datasetAttributes:
+        for das in self.datasetAttributes.values():
             candidateAttributes[len(candidateAttributes)] = das
         classifierattribute = AttributeInfo("Classifier", outputType.Discrete, 0, 2)
         candidateAttributes[len(candidateAttributes)] = classifierattribute
-        testInstances = self.mla.generateValuesData(candidateAttributes)
-        testInstances.setClassIndex(len(testInstances) - 1)
-        #初始化评估器
-        #self.evaluation = Evaluation(testInstances)
-
-        #self.evaluation.evaluateModel(self.classifier,testInstances)
-        #预测
+        df = self.mla.generateValuesTabularFromFE(candidateAttributes)
+        model = self.classifier
+        df = dask.dataframe.from_pandas(data=df, npartitions=1)
+        df_test = df.iolc[:, -1]
+        del df[df_test.name]
+        # 预测
+        df_true = model.predict_proba(df)
         #计算得分
-        score = 0
+        score = df_true.compute()[0][1]
         return score
 
     def needToRecalcScore(self) -> bool:

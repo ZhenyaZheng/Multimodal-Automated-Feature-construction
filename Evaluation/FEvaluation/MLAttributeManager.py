@@ -1,5 +1,8 @@
 import copy
 import os.path
+from shutil import copyfile
+
+import numpy as np
 import pandas as pd
 from distributed import Client
 from Evaluation.FEvaluation.OperatorBasedAttributes import OperatorBasedAttributes
@@ -51,10 +54,25 @@ class MLAttributeManager:
         client = Client()
         clf = ParallelPostFit(model, scoring="r2")
         clf.fit(datatarin, target)
+        client.close()
         return clf
 
     def addFiletoTargetfile(self, modelfilepath, datasetfilepath, addhead):
-        pass
+        modelfile = modelfilepath + ".csv"
+        if os.path.isfile(modelfile) and not addhead:
+            with open(modelfile, "a") as tarfile:
+                with open(datasetfilepath, "r") as sourfile:
+                    sourfile.readline()
+                    a = sourfile.readline()
+                    tarfile.writelines("\n")
+                    while a != "":
+                        print(a)
+                        tarfile.writelines(a)
+                        a = sourfile.readline()
+        else:
+            copyfile(datasetfilepath, modelfile)
+
+
 
     def getDatasetInstances(self, datadict):
         filename = datadict["data"].name + "_candidatedata.csv"
@@ -68,6 +86,10 @@ class MLAttributeManager:
         datainstances = self.generateValuesTabular(dataattsvalues)
         pd.DataFrame.to_csv(datainstances, filepath)
         return datainstances
+
+    def generateValuesTabularFromFE(self, candidateAttributes):
+        tempattlist = [candidateAttributes]
+        return self.getDatasetInstances(tempattlist)
 
     def generateTrainsetAtts(self, datadict):
         '''
@@ -135,7 +157,7 @@ class MLAttributeManager:
             for ats in dav.items():#(1:att)
                 index = ats[0]
                 att = ats[1]
-                df.iloc[:,index][num] = att.getValue()
+                df.iloc[:, index][num] = att.getValue()
             num += 1
         return df
 
