@@ -21,13 +21,18 @@ class FEvaluation(Evaluation):
         pass
 
     def discretizeColumns(self, datadict, bins):
+        flag = False
         for acs in self.analycolumns:
             if acs[2].getType() != outputType.Discrete:
                 discretizer = Discretizer(bins)
                 soucol = [{"name": acs[0], "type": acs[2].getType()}]
                 discretizer.processTrainingSet(datadict["data"], soucol, None)
-                acs[0], acs[1] = discretizer.generateColumn(datadict, soucol, None)
+                newcolumn = discretizer.generateColumn(datadict["data"], soucol, None)
+                acs[0] = newcolumn["name"]
+                acs[1] = newcolumn["data"]
                 acs[2] = ColumnInfo([acs[2]], None, discretizer, acs[0], False, discretizer.getOutputType(), bins)
+                flag = True
+        return flag
 
     def initFEvaluation(self, columntoanalyze):
         self.analycolumns = columntoanalyze

@@ -28,7 +28,7 @@ class WordCluster(Cluster):
         self.embed_dict = None    
 
     def avg_embed(self):
-        embed_path = "embed.plk"#os.path.join(self.dataset.base_dir, 'parsed_data/embed.plk')
+        embed_path = "text/embed.plk"#os.path.join(self.dataset.base_dir, 'parsed_data/embed.plk')
         if self.embed_dict is None:
             self.embed_dict = pickle.load(open(embed_path, 'rb'))
 

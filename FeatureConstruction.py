@@ -82,7 +82,7 @@ def _FC_Iter_(datadict, unaryoperator_list : list,otheroperator_list : list,iter
             for oop in otheroperators:
                 if(oop.getFScore() != None and oop.getFScore() >= theproperty.fsocre and evaluationatts <= theproperty.maxevaluationattsperiter):
                     datacopy = copy.deepcopy(datasetcopy)
-                    newcolumn = (om.generateColumn(datacopy, oop, False))
+                    newcolumn = [om.generateColumn(datacopy, oop, False)]
                     wsocre = wevaluation.produceScore(datasetcopy, tempcurrentclassifications, oop, newcolumn)
                     oop.setWScore(wsocre)
                     evaluationatts += 1
@@ -173,6 +173,7 @@ def getDatadict(dataset):
     index = theproperty.targetindex
     datadict["target"] = datadict["data"].iloc[:, index]
     del datadict["data"][datadict["target"].name]
+    datadict["targetInfo"] = datainfo.pop(-1)
     return datadict
 
 

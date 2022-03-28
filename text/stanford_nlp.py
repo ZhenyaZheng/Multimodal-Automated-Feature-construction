@@ -3,7 +3,7 @@ from stanfordcorenlp import StanfordCoreNLP
 
 class StanfordNLP:
 
-    def __init__(self, model_path='stanfordmodel/stanford-corenlp-full-2018-10-05'):
+    def __init__(self, model_path='text/stanfordmodel/stanford-corenlp-full-2018-10-05'):
         try:
             self.standford_nlp = StanfordCoreNLP(model_path)
             #print("StanfordNLP Suceessful!")

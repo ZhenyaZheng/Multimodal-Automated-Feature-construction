@@ -68,7 +68,7 @@ class OperatorManager:
         for os in operators:
             print("this is ",num," / ",osnums," and time is ",datetime.datetime.now())
             num += 1
-            newcolumn = (self.generateColumn(datadict["data"], os))
+            newcolumn = [self.generateColumn(datadict["data"], os)]
             '''newcolumndata = []
             for nc in newcolumn[1]:
                 newcolumndata += nc
@@ -226,7 +226,7 @@ class OperatorManager:
                 count += 1
                 if count % 1000 == 0:
                     logger.Info("analyzed ", count, " attributes")
-                newcolumn = (self.generateColumn(datacopy, ops))
+                newcolumn = [self.generateColumn(datacopy, ops)]
                 if newcolumn[1] == None or fevaluation == None:
                     logger.Error("generate column or fevaluation error!")
                 newfevaluation = copy.deepcopy(fevaluation)

@@ -41,6 +41,8 @@ class ColumnInfo:
         return self.istargetclass
 
     def __eq__(self, other):
+        if other == None:
+            return False
         if self.name != other.getName() or self.type != other.getType():
             return False
         return True

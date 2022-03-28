@@ -27,4 +27,7 @@ def Dig_all_feature(image = None):
                      np.round(description.kurtosis, 2),np.round(description.skewness, 2),
                      np.round(np.median(image_rgb, axis=1), 2)]).flatten(),np.array([image_gs_feature,
                      image_hogs_feature]).flatten())
-    return np.append(ans,image_edges_nums)
+    return np.append(ans, image_edges_nums)
+
+def process():
+    pass

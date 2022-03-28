@@ -1,9 +1,9 @@
-from MAFC_Operator import Operator, operatorType, outputType
+from MAFC_Operator.operator_base import Operator, operatorType, outputType
 
 
 class GroupbyTime(Operator):
-    def __int__(self):
-        self.mapoper = {"max":0,"min":1,"count":2,"mean":3,"std":4}
+    def __init__(self):
+        self.mapoper = {"max": 0, "min": 1, "count": 2, "mean": 3, "std": 4}
 
     def generateName(self,sourcecolumns,targetcolumn):
         Sname = "Source("

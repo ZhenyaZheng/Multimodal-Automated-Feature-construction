@@ -78,21 +78,21 @@ class DatasetAttributes:
         :param classifier:
         :return:dict
         '''
-        try:
-            self.processGeneralDatasetInfo(datadict)
+        #try:
+        self.processGeneralDatasetInfo(datadict)
 
-            self.processInitialEvaluationInformation(datadict, classifier)
+        self.processInitialEvaluationInformation(datadict, classifier)
 
-            self.processEntropyBasedMeasures(datadict)
+        self.processEntropyBasedMeasures(datadict)
 
-            self.processAttributesStatisticalTests(datadict)
+        self.processAttributesStatisticalTests(datadict)
 
-            return self.generateDatasetAttributesMap()
+        return self.generateDatasetAttributesMap()
 
-        except Exception as ex:
+        '''except Exception as ex:
             logger.Error(f'Failed in func "getDatasetBasedFeature" with exception: {ex}')
             return None
-
+        '''
     def processGeneralDatasetInfo(self, datadict):
         '''
         提取基本信息
@@ -185,13 +185,13 @@ class DatasetAttributes:
             # 此处留坑
             replicatedDataset = copy.deepcopy(datadict)
             column = None
-            for cl in datadict["info"]:
+            for cl in replicatedDataset["Info"]:
                 if cl.getName() == ci.name:
                     column = cl
                     break
             if column == None:
                 logger.Error(ci.name, "columninfo is not exist")
-            newcolumn = (ci.name, ci, column)
+            newcolumn = [ci.name, ci, column]
             tempList = []
             tempList.append(newcolumn)
             ige.initFEvaluation(tempList)
@@ -269,7 +269,7 @@ class DatasetAttributes:
                     counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'],
                                                                                  self.discreteAttributesList[i],self.discreteAttributesList[j])
 
-                    testVal = scipy.stats.chi2_contingency(counts)
+                    testVal = scipy.stats.chi2_contingency(counts)[0]
                     if not np.isnan(testVal) and not np.isinf(testVal):
                         chiSquaredTestValuesList.append(testVal)
 
@@ -291,10 +291,10 @@ class DatasetAttributes:
         for ci in self.numericAttributesList:
             erduo = Discretizer(bins)
             tempColumnsList = []
-            tempColumnsList.append(datadict['data'][ci])
+            tempColumnsList.append(ci)
             sourceColumnslist = [{'name': tl.getName(), 'type': tl.getType()} for tl in tempColumnsList]
             erduo.processTrainingSet(datadict['data'], sourceColumnslist, None)
-            discretizedAttribute = erduo.generateColumn(datadict, sourceColumnslist, None)
+            discretizedAttribute = erduo.generateColumn(datadict['data'], sourceColumnslist, None)
             discretizedAttdata = discretizedAttribute['data'].compute()
             discretizedAttdatas = []
             for dias in discretizedAttdata:
@@ -307,7 +307,7 @@ class DatasetAttributes:
         for i in range(len(discretizedColumns) - 1):
             for j in range(i + 1, len(discretizedColumns)):
                 if (i != j):
-                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'],discretizedColumns[i],
+                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], discretizedColumns[i],
                                                                                  discretizedColumns[j])
                     testVal = scipy.stats.chi2_contingency(counts)[0]
                     if not np.isnan(testVal) and not np.isinf(testVal):
@@ -384,14 +384,13 @@ class DatasetAttributes:
                               self.avgChiSquareValueForDiscreteAndDiscreteAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("stdChiSquareValueForDiscreteAndDiscreteAttributes", outputType.Numeric,
                               self.stdChiSquareValueForDiscreteAndDiscreteAttributes, -1)
-        attributes[len(attributes)] = AttributeInfo("minorityClassPercentage", outputType.Numeric, self.minorityClassPercentage, -1)
         
         attributes[len(attributes)] = AttributeInfo("FMeasureValues" , outputType.Numeric,
                                             self.FMeasureValues, -1)
 
         return attributes
 
-    def generateDiscreteAttributesCategoryIntersection(self,data, col1, col2):
+    def generateDiscreteAttributesCategoryIntersection(self, data, col1, col2):
         newcol1 = None
         newcol2 = None
         if type(col1) != list:
@@ -403,6 +402,6 @@ class DatasetAttributes:
         elif type(col2) == list:
             newcol2 = pd.value_counts(col2)
 
-        tempDf = pd.merge(newcol1.reset_index(), newcol2.reset_index(), how='inner')
+        tempDf = pd.merge(newcol1.reset_index(), newcol2.reset_index(), how='cross')
         return tempDf.iloc[:, 1:3].T.to_numpy()
 

@@ -25,11 +25,11 @@ class Discretizer(Unary):
     def getName(self) -> str:
         return "Discretizer"
 
-    def generateColumn(self,dataset, sourceColumns, targetColumns):
+    def generateColumn(self, dataset, sourceColumns, targetColumns):
         columnname = sourceColumns[0]['name']
         def getdiscretizer(datas):
             return [int((data - self.min_float) // self.therange) for data in datas]
-        columndata = dataset[columnname].map_partitions(getdiscretizer,meta = ('getdiscretizer','i8'))
+        columndata = dataset[columnname].map_partitions(getdiscretizer, meta = ('getdiscretizer', 'i8'))
 
         name = "Discretizer(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}

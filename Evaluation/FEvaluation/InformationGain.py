@@ -18,21 +18,24 @@ class InformationGainFilterEvaluator(FEvaluation):
             analyzedDatasets["data"][candidateAttributes[0]] = candidateAttributes[1]
 
         bins = 10
-        super(InformationGainFilterEvaluator, self).discretizeColumns(analyzedDatasets, bins)
+        flag = super(InformationGainFilterEvaluator, self).discretizeColumns(analyzedDatasets, bins)
         self.valuesPerKey = {}
-        X_train, X_test, y_train, y_test = train_test_split(analyzedDatasets["data"], analyzedDatasets["target"], test_size=0.3)
-        for index, value in zip(y_test.index, y_test):
-            indexlist = []
-            for cl in self.analycolumns:
-                val = cl[1][index].compute()
-                indexlist.append(val)
-            indexkey = tuple(indexlist)
-            if self.valuesPerKey.get(indexkey) == None:
-                numofunique = cl[2].getNumsOfUnique()
-                if numofunique == None:
-                    logger.Error(cl[0], "Discrete Column is not exist numsofunique")
-                self.valuesPerKey[indexkey] = list(np.zeros(numofunique))
-            self.valuesPerKey[value] += 1
+        X_train, X_test, y_train, y_test = train_test_split(analyzedDatasets["data"], analyzedDatasets["target"], test_size=0.3, shuffle=False)
+
+        for cl in self.analycolumns:
+            val = cl[1].compute().values
+            if flag:
+                val = val[0]
+            for index, value in zip(y_test.index, y_test):
+                indexlist = []
+                indexlist.append(val[index])
+                indexkey = tuple(indexlist)
+                if self.valuesPerKey.get(indexkey) == None:
+                    numofunique = analyzedDatasets["targetInfo"].getNumsOfUnique()
+                    if numofunique == None:
+                        logger.Error(analyzedDatasets["targetInfo"].getName(), "Discrete Column is not exist numsofunique")
+                    self.valuesPerKey[indexkey] = list(np.zeros(numofunique))
+                self.valuesPerKey[indexkey][value] += 1
 
         return self.calculateIG(X_train)
 

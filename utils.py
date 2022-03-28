@@ -6,7 +6,8 @@ from Evaluation.WEvaluation.AucWrapperEvaluation import AucWrapperEvaluation
 from MAFC_Operator.ColumnInfo import ColumnInfo
 from MAFC_Operator.operator_base import outputType
 from logger.logger import logger
-
+from text.text_process import process as txprocess
+from image.image_process import process as improcess
 def Image_FC(image_data):
     '''
 
@@ -15,7 +16,7 @@ def Image_FC(image_data):
     '''
     if image_data is None:
         return None
-
+    return improcess(image_data)
 
 def Text_FC(text_data):
     '''
@@ -24,6 +25,7 @@ def Text_FC(text_data):
     '''
     if text_data is None:
         return None
+    return txprocess(text_data)
 
 def getInfo(data):
     info = []

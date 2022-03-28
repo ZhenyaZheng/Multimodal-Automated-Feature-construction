@@ -123,7 +123,7 @@ class MLAttributeManager:
             else:
                 for ops in otheroperators:
                     datacopy = copy.deepcopy(datadict)
-                    candidateatt = (oms.generateColumn(datacopy, ops, False))
+                    candidateatt = [oms.generateColumn(datacopy["data"], ops, False)]
                     obas = OperatorBasedAttributes()
                     candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
                     oms.addColumn(datacopy, candidateatt)
