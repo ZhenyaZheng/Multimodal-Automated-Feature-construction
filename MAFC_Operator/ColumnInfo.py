@@ -1,7 +1,7 @@
 
 
 class ColumnInfo:
-    def __init__(self,sourcecolumns,targetcolumns,operator,name,istargetclass,type,numsofunique = None):
+    def __init__(self,sourcecolumns, targetcolumns, operator, name, istargetclass, type, numsofunique = None):
         self.sourcecolumns = sourcecolumns
         self.targetcolumns = targetcolumns
         self.operator = operator

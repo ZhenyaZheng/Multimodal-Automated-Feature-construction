@@ -10,11 +10,11 @@ class evalutionType(Enum):
 
 
 class evalutionScoringMethod(Enum):
-    AUC = 1
-    InformationGain = 2
-    ProbDiff = 3
-    LogLoss = 4
-    ClassifierProbability = 5
+    AUC = 0
+    InformationGain = 1
+    ProbDiff = 2
+    LogLoss = 3
+    ClassifierProbability = 4
 
 
 class Evaluation:

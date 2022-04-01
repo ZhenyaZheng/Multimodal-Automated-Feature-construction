@@ -15,18 +15,15 @@ class GroupCount(Groupby):
     def getName(self) -> str:
         return "GroupCount"
 
-    def generateColumn(self,dataset, sourceColumns, targetColumns):
+    def generateColumn(self, dataset, sourceColumns, targetColumns):
         oper = self.mapoper["count"]
         def getcount(df, sourceColumns):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
-            columndata = []
-            for i, j in enumerate(data.iterrows()):
-                key = tuple(j[1].values)
-                columndata.append(self.data[key][oper])
-            return columndata
+            key = tuple(data.values)
+            return self.data[key][oper]
 
-        columndata = dataset.map_partitions(getcount, sourceColumns, meta=('getcount', 'f8'))
+        columndata = dataset.apply(getcount, sourceColumns=sourceColumns, meta=('getcount', 'f8'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

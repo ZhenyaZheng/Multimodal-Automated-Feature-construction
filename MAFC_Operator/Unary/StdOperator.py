@@ -27,14 +27,14 @@ class StdOperator(Unary):
         name = "StdOperator(" + columnname + ")"
         if self.stdval == 0:
             return {"name":name,"data":None}
-        def getstd(datas):
-            return [((data - self.meanval) / self.stdval) for data in datas]
-        columndata = dataset[columnname].map_partitions(getstd,meta = ('getstd','i8'))
+        def getstd(data, meanval, stdval):
+            return (data - meanval) / stdval
+        columndata = dataset[columnname].apply(getstd, meanval=self.meanval, stdval=self.stdval, meta=('getstd','i8'))
         newcolumn = {"name": name, "data": columndata}
         return newcolumn
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-        if super(StdOperator, self).isMatch(dataset,sourceColumns,targetColumns):
+        if super(StdOperator, self).isMatch(dataset, sourceColumns, targetColumns):
             if sourceColumns[0]['type'] == outputType.Numeric:
                 return True
         return False

@@ -1,10 +1,8 @@
 import copy
-import os
-import pandas as pd
 import numpy as np
 import dask.dataframe as dd
 from scipy import stats
-
+from MAFC_Operator.OperatorManager import OperatorManager
 from Evaluation.FEvaluation.AttributeInfo import AttributeInfo
 from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
 from Evaluation.FEvaluation.StatisticOperation import StatisticOperation
@@ -20,15 +18,17 @@ class OperatorBasedAttributes:
     def getOperatorsBasedAttributes(self, datadict, oa, evaluationatt):
         '''
         为所生成属性的“父级”生成元特征，这些元特征不需要计算要计算的生成属性的值
-        :param evaluationatt: (name,data)
+        :param evaluationatt: [name: str, data:data.dataframe.core.Series, ColumnInfo]
         :param datadict:
-        :param oa: 
+        :param oa: Operators
         :return: {}
         '''
-        try:
+        #try:
+        if 1:
             datacopy = copy.deepcopy(datadict)
             #留坑
-            datacopy["data"][evaluationatt[0]] = evaluationatt[1]
+            om = OperatorManager()
+            om.addColumn(datacopy, evaluationatt)
             tempList = []
             tempList.append(evaluationatt)
             igfe = InformationGainFilterEvaluator()
@@ -44,9 +44,9 @@ class OperatorBasedAttributes:
             #self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict['data'], oa)
 
             return self.generateInstanceAttributesMap()
-        except Exception as ex:
-            logger.Error(f'Failed in func "getOperatorsBasedAttributes" with exception: {ex}')
-            return None
+        # except Exception as ex:
+        #     logger.Error(f'Failed in func "getOperatorsBasedAttributes" with exception: {ex}')
+        #     return None
 
     def ProcessOperators(self, oa: Operators):
         '''
@@ -65,11 +65,11 @@ class OperatorBasedAttributes:
         self.numOfDateSources = 0
         if oa.sourceColumns != None:
             for ci in oa.sourceColumns:
-                if ci['type'] == outputType.Numeric:
+                if ci.getType() == outputType.Numeric:
                     self.numOfNumericSources += 1
-                elif ci['type'] == outputType.Discrete:
+                elif ci.getType() == outputType.Discrete:
                     self.numOfDiscreteSources += 1
-                elif ci['type'] == outputType.Date:
+                elif ci.getType() == outputType.Date:
                     self.numOfDateSources += 1
         self.operatorTypeIdentifier = self.getOperatorTypeID(oa.getOperator().getType())
         self.isOutputDiscrete = 0
@@ -85,21 +85,21 @@ class OperatorBasedAttributes:
 
     def getOperatorTypeID(self, type):
         if type == operatorType.Unary:
-            return 1
+            return 0
         elif type == operatorType.Binary:
-            return 2
+            return 1
         elif type == operatorType.GroupBy:
-            return 3
+            return 2
         elif type == operatorType.TimeGroupBy:
-            return 4
+            return 3
         else:
             logger.Error("operatorType Error")
 
-    def getDiscreteID(self,oper):
+    def getDiscreteID(self, oper):
         if oper == None:
             return 0
 
-        namedict = {"Discretizer":1,"DayofWeek":2,"HourofDay":3,"IsWeekend":4}
+        namedict = {"Discretizer": 1, "DayofWeek": 2, "HourofDay": 3, "IsWeekend": 4}
         if namedict.get(oper.getName()) != None:
             return namedict.get(oper.getName())
         return 0
@@ -111,16 +111,16 @@ class OperatorBasedAttributes:
             return 1
         return 0
 
-    def getNumOfNewAttributeDiscreteValues(self,oa):
+    def getNumOfNewAttributeDiscreteValues(self, oa):
         if oa.secondoperators != None:
             return oa.secondoperators.getNumOfBins()
         else:
             if oa.getOperator().getOutputType() != outputType.Discrete:
                 return -1
             else :
-                return oa.getOperator().getNumOfBins()
+                return oa.getOperator().getNumofBins()
 
-    def processSourceAndTargetAttributes(self,dataset: dd, oa : Operators):
+    def processSourceAndTargetAttributes(self,dataset: dd.DataFrame, oa: Operators):
         '''
 
         :param oa:
@@ -146,7 +146,7 @@ class OperatorBasedAttributes:
         self.avgValueOfNumericTargetAttribute = 0
         self.stdValueOfNumericTargetAttribute = 0
 
-        if oa.targetColumns == None or oa.targetColumns[0].getType() != outputType.Numeric:
+        if oa.targetColumns == None or len(oa.targetColumns) == 0 or oa.targetColumns[0].getType() != outputType.Numeric:
             pass
         else:
             columnname = oa.targetColumns[0].getName()
@@ -164,11 +164,13 @@ class OperatorBasedAttributes:
         '''
         self.chiSquareTestValueForSourceAttributes = 0
         if len(oa.sourceColumns) == 2:
-            if oa.sourceColumns[0].getType() == outputType.Discrete and oa.sourceColumns[1].getType == outputType.Discrete:
+            if oa.sourceColumns[0].getType() == outputType.Discrete and oa.sourceColumns[1].getType() == outputType.Discrete:
                 templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
                 templist2 = list(dataset[oa.sourceColumns[1].getName()].values.compute())
-                list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(templist1, templist2, oa.sourceColumns[0].getNumsOfUnique(), oa.sourceColumns[1].getNumsOfUnique())
-                tempval = self.statisticoperation.chisquare(list1)
+                list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2)
+                tempval = None
+                if list1 is not None:
+                    tempval = self.statisticoperation.chisquare(list1)
                 if tempval != None:
                     self.chiSquareTestValueForSourceAttributes = tempval
                 else:
@@ -196,15 +198,17 @@ class OperatorBasedAttributes:
                         newcolumn, thedata = self.statisticoperation.discretizeNumericColumn(dataset, ci, None)
                         columnstoanalyze.append(newcolumn)
                         if newcolumn.getName() not in dataset.columns:
-                            dataset = dataset.merge(pd.DataFrame(data = newcolumn.getName(),columns=[thedata]))
+                            dataset[newcolumn.getName()] = thedata
             if len(columnstoanalyze) > 1:
                 chiSquareTestValues = []
-                for i in range(0 , len(columnstoanalyze) - 1):
-                    for j in (i+1 , len(columnstoanalyze)):
+                for i in range(0, len(columnstoanalyze) - 1):
+                    for j in range(i+1, len(columnstoanalyze)):
                         templist1 = list(dataset[columnstoanalyze[i].getName()].values.compute())
                         templist2 = list(dataset[columnstoanalyze[j].getName()].values.compute())
-                        list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(templist1,templist2,columnstoanalyze[i].getNumsOfUnique(),columnstoanalyze[j].getNumsOfUnique())
+                        list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1,templist2)
                         chiSquareTestVal = self.statisticoperation.chisquare(list1)
+                        if list1 is not None:
+                            continue
                         if chiSquareTestVal != None:
                             chiSquareTestValues.append(chiSquareTestVal)
                     if len(chiSquareTestValues) > 0:

@@ -21,13 +21,10 @@ class GroupStd(Groupby):
         def getstd(df, sourceColumns):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
-            columndata = []
-            for i, j in enumerate(data.iterrows()):
-                key = tuple(j[1].values)
-                columndata.append(self.data[key][oper])
-            return columndata
+            key = tuple(data.values)
+            return self.data[key][oper]
 
-        columndata = dataset.map_partitions(getstd, sourceColumns, meta=('getstd', 'f8'))
+        columndata = dataset.apply(getstd, sourceColumns=sourceColumns, meta=('getstd', 'f8'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

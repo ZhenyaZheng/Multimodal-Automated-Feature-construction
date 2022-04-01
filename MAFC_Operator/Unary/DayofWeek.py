@@ -20,10 +20,10 @@ class DayofWeek(Unary):
         '''
         columnname = sourceColumns[0]['name']
 
-        def getweek(dates):
-            return [date.weekday() for date in dates]
+        def getweek(date):
+            return date.weekday()
 
-        columndata = dataset[columnname].map_partitions(getweek, meta=('getweek', 'i8'))
+        columndata = dataset[columnname].apply(getweek, meta=('getweek', 'i8'))
         name = "DayofWeek(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

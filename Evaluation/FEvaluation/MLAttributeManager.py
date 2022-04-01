@@ -1,7 +1,6 @@
 import copy
 import os.path
 from shutil import copyfile
-
 import numpy as np
 import pandas as pd
 from distributed import Client
@@ -15,7 +14,7 @@ from Evaluation.WEvaluation.WEvaluation import WEvaluation
 from utils import *
 from dask_ml.wrappers import ParallelPostFit
 from MAFC_Operator.operator_base import outputType
-
+from logger.logger import logger
 
 class MLAttributeManager:
     def __init__(self):
@@ -31,7 +30,7 @@ class MLAttributeManager:
             if os.path.isdir(datasetfilepath):
                 addhead = True
                 for fp in os.listdir(datasetfilepath):
-                    if os.path.isfile(datasetfilepath + fp) and datadict["name"] not in backgroundFilePath:
+                    if os.path.isfile(datasetfilepath + fp) and datadict["name"] not in datasetfilepath:
                         self.addFiletoTargetfile(backgroundFilePath, datasetfilepath + fp, addhead)
                         addhead = False
                     else:
@@ -103,12 +102,12 @@ class MLAttributeManager:
         for classifier in classifiers:
             evaluationresult = evaluator.runClassifier(classifier, datadict)
             originalAUC = evaluator.calculateAUC(evaluationresult)
+            datasetatts = {}
+            #datasetatts = dbas.getDatasetBasedFeature(datadict, classifier)
 
-            datasetatts = dbas.getDatasetBasedFeature(datadict, classifier)
+            #classifieratt = AttributeInfo("Classifier", outputType.Discrete, self.getClassifierIndex(classifier), 3)
 
-            classifieratt = AttributeInfo("Classifier", outputType.Discrete, self.getClassifierIndex(classifier), 3)
-
-            datasetatts[len(datasetatts)] = classifieratt
+            #datasetatts[len(datasetatts)] = classifieratt
 
             oms = OperatorManager()
             unaryoperlist = theproperty.unaryoperator
@@ -116,14 +115,14 @@ class MLAttributeManager:
 
             otheroperlist = theproperty.otheroperator
             otheroperators = oms.OtherOperator(datadict, otheroperlist)
-            otheroperators += unaryoperators
+            otheroperators = unaryoperators + otheroperators
             numofthread = theproperty.thread
             if numofthread > 1:
                 pass
             else:
                 for ops in otheroperators:
                     datacopy = copy.deepcopy(datadict)
-                    candidateatt = [oms.generateColumn(datacopy["data"], ops, False)]
+                    candidateatt = oms.generateColumn(datacopy["data"], ops, False)
                     obas = OperatorBasedAttributes()
                     candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
                     oms.addColumn(datacopy, candidateatt)

@@ -1,6 +1,18 @@
 
 class properties:
     def __init__(self):
+        '''
+        :param
+        :param
+        :param
+        :param
+        :param
+        :param
+        :param
+        :param
+        :param
+
+        '''
         self.unaryoperator = ['DayofWeek','Discretizer','HourofDay','IsWeekend','StdOperator']
         self.otheroperator = ['AddOperator','SubOperator','MultiOperator','DivisOperator','GroupMax','GroupMean','GroupMin','GroupStd','GroupCount']
         self.DiscretizerBinsNumber = 10 #将实数离散化后的类数
@@ -16,4 +28,5 @@ class properties:
         self.datasetname = "dataset"
         self.classifiersforMLAttributes = ["RandomForest"]
         self.targetindex = -1
+        self.image_path = None
 theproperty = properties()

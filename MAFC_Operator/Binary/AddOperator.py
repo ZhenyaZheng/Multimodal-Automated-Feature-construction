@@ -19,6 +19,6 @@ class AddOperator(Binary):
         scolumnname = sourceColumns[0]['name']
         tcolumnname = targetColumns[0]['name']
         columndata = dataset[scolumnname] + dataset[tcolumnname]
-        name = "AddOperator" + self.generateName(sourceColumns,targetColumns)
+        name = "AddOperator" + self.generateName(sourceColumns, targetColumns)
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

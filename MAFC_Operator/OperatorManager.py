@@ -34,27 +34,31 @@ class OperatorManager:
         logger.Info("UnaryOperator complete")
         return operators
 
-    def generateColumn(self, data, os: Operators, needcompute: bool = True):
+    def generateColumn(self, data, ops: Operators, needcompute: bool = False):
         '''
         :param data: data
         :param os:Operators
         :return: [values]
         '''
-        operator = os.operator
-        scdict = [{"name": sc.getName(), "type": sc.getType()} for sc in os.sourceColumns]
-        tcdict = [{"name": tc.getName(), "type": tc.getType()} for tc in os.targetColumns]
+        operator = ops.operator
+        scdict = None
+        if ops.sourceColumns != None:
+            scdict = [{"name": sc.getName(), "type": sc.getType()} for sc in ops.sourceColumns]
+        tcdict = None
+        if ops.targetColumns != None:
+            tcdict = [{"name": tc.getName(), "type": tc.getType()} for tc in ops.targetColumns]
         operator.processTrainingSet(data, scdict, tcdict)
         newcolumn = operator.generateColumn(data, scdict, tcdict)
         newcolumndata = newcolumn["data"]
-        columninfo = None
+
         if needcompute == True:
             newcolumndata = newcolumndata.compute()
-        if os.getType() == outputType.Discrete:
+        if ops.getType() == outputType.Discrete:
             lensofvalues = len(newcolumn["data"].value_counts().compute())
-            columninfo = ColumnInfo(os.sourceColumns, os.targetColumns,operator, os.getName(),False, os.getType(), lensofvalues)
+            columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns,operator, ops.getName(), False, ops.getType(), lensofvalues)
         else:
-            columninfo = ColumnInfo(os.sourceColumns, os.targetColumns, operator, os.getName(), False, os.getType())
-        return newcolumn['name'], newcolumndata, columninfo
+            columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns, operator, ops.getName(), False, ops.getType())
+        return [newcolumn['name'], newcolumndata, columninfo]
 
 
     def GenerateAddColumnToData(self,datadict,operators):
@@ -66,16 +70,9 @@ class OperatorManager:
         osnums = len(operators)
         num = 1
         for os in operators:
-            print("this is ",num," / ",osnums," and time is ",datetime.datetime.now())
+            print("this is ", num, " / ", osnums, " and time is ", datetime.datetime.now())
             num += 1
-            newcolumn = [self.generateColumn(datadict["data"], os)]
-            '''newcolumndata = []
-            for nc in newcolumn[1]:
-                newcolumndata += nc
-            datadict["data"] = datadict["data"].merge(pd.DataFrame(data = newcolumndata, columns=[newcolumn[0]]))
-            
-            datadict["Info"].append(newcolumn[2])
-            '''
+            newcolumn = self.generateColumn(datadict["data"], os)
             self.addColumn(datadict, newcolumn)
         logger.Info("GenerateAddColumnToData complete")
 
@@ -167,7 +164,7 @@ class OperatorManager:
             operatorlist.append(self.getUnaryOperator(op))
         return operatorlist
 
-    def getOperators(self, data, operatorlist, maxcombinations,includeattributes = None):
+    def getOperators(self, data, operatorlist, maxcombinations, includeattributes = None):
         '''
         :param includeattributes:[ColumnInfo]
         :param operatorlist:['operator']
@@ -180,7 +177,7 @@ class OperatorManager:
         theoperators = []
         i = maxcombinations
         while i > 0:
-            attributecombination = self.getCombination(data["Info"],i)
+            attributecombination = self.getCombination(data["Info"], i)
             for ac in attributecombination:
                 if len(includeattributes) > 0:
                     thecolumn = ac.copy()
@@ -189,7 +186,7 @@ class OperatorManager:
                         continue
                 for op in operatorlist:
                     if(op.isMatch(data["data"],[{"name":itac.getName(),"type":itac.getType()}for itac in ac],[])):
-                        newops = Operators(ac, [], self.getOperator(op), None)
+                        newops = Operators(ac, None, self.getOperator(op), None)
                         theoperators.append(newops)
 
                     for tc in list(data["Info"]):
@@ -198,7 +195,7 @@ class OperatorManager:
                         thecolumn = []
                         thecolumn.append(tc)
                         if(op.isMatch(data["data"],[{"name":itac.getName(),"type":itac.getType()}for itac in ac],[{"name":tc.getName(),"type":tc.getType()}for tc in thecolumn])):
-                            ops = Operators(ac,thecolumn,self.getOperator(op), None)
+                            ops = Operators(ac, thecolumn, self.getOperator(op), None)
                             theoperators.append(ops)
             i = i - 1
         addoperators = []
@@ -226,7 +223,7 @@ class OperatorManager:
                 count += 1
                 if count % 1000 == 0:
                     logger.Info("analyzed ", count, " attributes")
-                newcolumn = [self.generateColumn(datacopy, ops)]
+                newcolumn = self.generateColumn(datacopy["data"], ops)
                 if newcolumn[1] == None or fevaluation == None:
                     logger.Error("generate column or fevaluation error!")
                 newfevaluation = copy.deepcopy(fevaluation)

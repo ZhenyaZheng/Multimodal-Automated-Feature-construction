@@ -3,16 +3,16 @@ from enum import Enum
 import numpy as np
 
 class operatorType(Enum):
-    Unary = 1
-    Binary = 2
-    GroupBy = 3
-    TimeGroupBy = 4
+    Unary = 0
+    Binary = 1
+    GroupBy = 2
+    TimeGroupBy = 3
 
 class outputType(Enum):
-    Numeric = 1
-    Discrete = 2
-    Date = 3
-    String = 4
+    Numeric = 0
+    Discrete = 1
+    Date = 2
+    String = 3
 
 class Operator(object):
 

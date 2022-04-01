@@ -20,10 +20,10 @@ class HourofDay(Unary):
         '''
         columnname = sourceColumns[0]['name']
 
-        def gethour(dates):
-            return [date.time().hour for date in dates]
+        def gethour(date):
+            return date.time().hour
 
-        columndata = dataset[columnname].map_partitions(gethour, meta=('gethour', 'i8'))
+        columndata = dataset[columnname].apply(gethour, meta=('gethour', 'i8'))
         name = "HourofDay(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

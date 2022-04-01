@@ -21,13 +21,10 @@ class GroupMin(Groupby):
         def getmin(df, sourceColumns):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
-            columndata = []
-            for i, j in enumerate(data.iterrows()):
-                key = tuple(j[1].values)
-                columndata.append(self.data[key][oper])
-            return columndata
+            key = tuple(data.values)
+            return self.data[key][oper]
 
-        columndata = dataset.map_partitions(getmin, sourceColumns, meta=('getmin', 'f8'))
+        columndata = dataset.apply(getmin, sourceColumns=sourceColumns, meta=('getmin', 'f8'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

@@ -24,8 +24,7 @@ class InformationGainFilterEvaluator(FEvaluation):
 
         for cl in self.analycolumns:
             val = cl[1].compute().values
-            if flag:
-                val = val[0]
+
             for index, value in zip(y_test.index, y_test):
                 indexlist = []
                 indexlist.append(val[index])

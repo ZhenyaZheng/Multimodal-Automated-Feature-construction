@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import double
 from scipy import stats
 from MAFC_Operator.operator_base import outputType
 from MAFC_Operator import ColumnInfo
@@ -44,12 +45,12 @@ class StatisticOperation:
                 datalist1 = None
                 datalist2 = None
                 if ci1.getType() == outputType.Numeric:
-                    tempcolumn1,datalist1 = self.discretizeNumericColumn(dataset, ci1, dizr)
+                    tempcolumn1, datalist1 = self.discretizeNumericColumn(dataset, ci1, dizr)
                 else:
                     tempcolumn1 = ci1
                     datalist1 = list(dataset[tempcolumn1.getName()].values.compute())
                 if ci2.getType() == outputType.Numeric:
-                    tempcolumn2,datalist2 = self.discretizeNumericColumn(dataset, ci2, dizr)
+                    tempcolumn2, datalist2 = self.discretizeNumericColumn(dataset, ci2, dizr)
                 else:
                     tempcolumn2 = ci2
                     datalist2 = list(dataset[tempcolumn2.getName()].values.compute())
@@ -70,37 +71,36 @@ class StatisticOperation:
         sclist = [{'name':tl.getName(),'type':tl.getType()} for tl in tempcolumnlist]
         dizr.processTrainingSet(dataset, sclist, None)
         datadict = dizr.generateColumn(dataset, sclist, None)
-        datas = datadict['data'].compute()
-        thedata= []
-        for ds in datas:
-            thedata += ds
+        #datas = datadict['data'].compute()
 
         thecolumn = ColumnInfo([columninfo], None, dizr, dizr.getName(), False, dizr.getType(), dizr.getNumofBins())
-        return thecolumn, thedata
+        return thecolumn, datadict['data']
 
     def calculateChiSquareTestValues(self, dataset, list1:list[ColumnInfo], columnInfo:ColumnInfo):
         templist = []
         templist += [columnInfo]
         return self._calculateChiSquareTestValues(dataset, list1, templist)
 
-    def generateDiscreteAttributesCategoryIntersection(self, templist1:list, templist2:list, m, n):
-        list1 = []
-        for i in range(0, m):
-            templist = [0 for j in range(0, n)]
-            list1.append(templist.copy())
-        if len(templist2) != len(templist1):
-            logger.Error("Columns do not have the same number of instances")
-        for i in range(0,len(templist1)):
-            if len(list1) <= templist1[i] or len(list1[0]) <=templist2[i]:
-                logger.Error("Discrete column not from 0 beginning")
-            list[templist1[i]][templist2[i]] += 1
+    def generateDiscreteAttributesCategoryIntersection(self, data, col1:list, col2:list):
+        newcol1 = col1
+        newcol2 = col2
+        if type(col1) != list:
+            newcol1 = data[col1.getName()].compute().values
+        if type(col2) != list:
+            newcol2 = data[col2.getName()].compute().values
+        if len(newcol1) != len(newcol2):
+            return None
+        n = len(newcol1)
+        list1 = np.zeros((n, n), "int32")
+        for i in range(0, n):
+            list1[newcol1[i]][newcol2[i]] += 1
         return list1
 
-    def chisquare(self, list1 :list):
+    def chisquare(self, list1: list):
         m = len(list1)
         n = len(list1[0])
-        rowsum = np.zeros((m), "double")
-        colsum = np.zeros((n), "double")
+        rowsum = np.zeros((m), "float32")
+        colsum = np.zeros((n), "float32")
         total = 0.0
         for i in range(0, m):
             for j in range(0, n):
@@ -111,6 +111,10 @@ class StatisticOperation:
         expected = 0.0
         for i in range(0, m):
             for j in range(0, n):
+                if total == 0:
+                    return 0
                 expected = rowsum[i] * colsum[j] / total
-                sumsq += ((list1[i][j] - expected) ** 2) / expected
+                if expected == 0:
+                    continue
+                sumsq += ((float)(list1[i][j] - expected) ** 2) / expected
         return sumsq

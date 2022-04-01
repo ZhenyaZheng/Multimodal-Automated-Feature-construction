@@ -16,4 +16,7 @@ class TextOperator:
 
     @abstractmethod
     def getName(self):
-        return "TextOperator"
+        pass
+
+
+

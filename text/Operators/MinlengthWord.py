@@ -14,8 +14,8 @@ class MinlengthWord(TextOperator):
         '''
         nlp = English()
         def getMinlengthWord(data, nlp):
-            for i in [',', '.', '!', '?', '#', '%']:
-                sentence = sentence.replace(i, "")
+            for i in [',', '.', '!', '?', '#', '%', ':', ';', '"', "-", '/', '_', "(", ")"]:
+                data = data.replace(i, "")
             words = nlp(data)
             word = None
             for wd in words:

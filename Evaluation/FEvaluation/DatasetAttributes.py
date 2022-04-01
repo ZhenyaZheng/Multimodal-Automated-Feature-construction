@@ -10,7 +10,7 @@ from MAFC_Operator.Unary.discretizer import Discretizer
 from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
 from logger.logger import logger
 from properties.properties import theproperty
-
+from Evaluation.FEvaluation.StatisticOperation import StatisticOperation
 
 class DatasetAttributes:
 
@@ -71,6 +71,7 @@ class DatasetAttributes:
         self.discreteAttributesList: list
         self.numericAttributesList: list
 
+        self.stcop = StatisticOperation()
     def getDatasetBasedFeature(self, datadict, classifier):
         '''
         获取数据集的基本特征
@@ -78,21 +79,21 @@ class DatasetAttributes:
         :param classifier:
         :return:dict
         '''
-        #try:
-        self.processGeneralDatasetInfo(datadict)
+        try:
+            self.processGeneralDatasetInfo(datadict)
 
-        self.processInitialEvaluationInformation(datadict, classifier)
+            self.processInitialEvaluationInformation(datadict, classifier)
 
-        self.processEntropyBasedMeasures(datadict)
+            self.processEntropyBasedMeasures(datadict)
 
-        self.processAttributesStatisticalTests(datadict)
+            self.processAttributesStatisticalTests(datadict)
 
-        return self.generateDatasetAttributesMap()
-
-        '''except Exception as ex:
+        except Exception as ex:
             logger.Error(f'Failed in func "getDatasetBasedFeature" with exception: {ex}')
             return None
-        '''
+        finally:
+            return self.generateDatasetAttributesMap()
+
     def processGeneralDatasetInfo(self, datadict):
         '''
         提取基本信息
@@ -266,10 +267,11 @@ class DatasetAttributes:
         for i in range(len(self.discreteAttributesList) - 1):
             for j in range(i + 1, len(self.discreteAttributesList)):
                 if i != j:
-                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'],
-                                                                                 self.discreteAttributesList[i],self.discreteAttributesList[j])
 
-                    testVal = scipy.stats.chi2_contingency(counts)[0]
+                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], self.discreteAttributesList[i],self.discreteAttributesList[j])
+                    if counts is None:
+                        continue
+                    testVal = self.stcop.chisquare(counts)
                     if not np.isnan(testVal) and not np.isinf(testVal):
                         chiSquaredTestValuesList.append(testVal)
 
@@ -295,11 +297,9 @@ class DatasetAttributes:
             sourceColumnslist = [{'name': tl.getName(), 'type': tl.getType()} for tl in tempColumnsList]
             erduo.processTrainingSet(datadict['data'], sourceColumnslist, None)
             discretizedAttribute = erduo.generateColumn(datadict['data'], sourceColumnslist, None)
-            discretizedAttdata = discretizedAttribute['data'].compute()
-            discretizedAttdatas = []
-            for dias in discretizedAttdata:
-                discretizedAttdatas += dias
-            discretizedColumns.append(discretizedAttdatas)
+            discretizedAttdata = list(discretizedAttribute['data'].compute().values)
+
+            discretizedColumns.append(discretizedAttdata)
 
         # 现在，我们将所有原始离散属性添加到此列表中，并再次运行卡方检验
         discretizedColumns += self.discreteAttributesList
@@ -307,9 +307,10 @@ class DatasetAttributes:
         for i in range(len(discretizedColumns) - 1):
             for j in range(i + 1, len(discretizedColumns)):
                 if (i != j):
-                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], discretizedColumns[i],
-                                                                                 discretizedColumns[j])
-                    testVal = scipy.stats.chi2_contingency(counts)[0]
+                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], discretizedColumns[i], discretizedColumns[j])
+                    if counts is None:
+                        continue
+                    testVal = self.stcop.chisquare(counts)
                     if not np.isnan(testVal) and not np.isinf(testVal):
                         chiSquaredTestValuesList.append(testVal)
 
@@ -391,17 +392,17 @@ class DatasetAttributes:
         return attributes
 
     def generateDiscreteAttributesCategoryIntersection(self, data, col1, col2):
-        newcol1 = None
-        newcol2 = None
+        newcol1 = col1
+        newcol2 = col2
         if type(col1) != list:
-            newcol1 = data[col1.getName()].value_counts().compute()
-        elif type(col1) == list:
-            newcol1 = pd.value_counts(col1)
+            newcol1 = data[col1.getName()].compute().values
         if type(col2) != list:
-            newcol2 = data[col2.getName()].value_counts().compute()
-        elif type(col2) == list:
-            newcol2 = pd.value_counts(col2)
-
-        tempDf = pd.merge(newcol1.reset_index(), newcol2.reset_index(), how='cross')
-        return tempDf.iloc[:, 1:3].T.to_numpy()
+            newcol2 = data[col2.getName()].compute().values
+        if len(newcol1) != len(newcol2):
+            return None
+        n = len(newcol1)
+        list1 = np.zeros((n, n), "int32")
+        for i in range(0, n):
+            list1[newcol1[i]][newcol2[i]] += 1
+        return list1
 

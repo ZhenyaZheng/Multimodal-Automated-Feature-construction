@@ -3,7 +3,7 @@ from MAFC_Operator.operator_base import outputType
 from properties.properties import *
 
 class Discretizer(Unary):
-    def __init__(self, upperbound=properties(). DiscretizerBinsNumber):
+    def __init__(self, upperbound=theproperty.DiscretizerBinsNumber):
         self.upperbound = upperbound
 
     def requiredInputType(self) -> outputType:
@@ -27,25 +27,21 @@ class Discretizer(Unary):
 
     def generateColumn(self, dataset, sourceColumns, targetColumns):
         columnname = sourceColumns[0]['name']
-        def getdiscretizer(datas):
-            return [int((data - self.min_float) // self.therange) for data in datas]
-        columndata = dataset[columnname].map_partitions(getdiscretizer, meta = ('getdiscretizer', 'i8'))
+        def getdiscretizer(data, min_float, therange):
+            if therange == 0:
+                return 0
+            return int((data - min_float) // therange)
+        columndata = dataset[columnname].apply(getdiscretizer, min_float=self.min_float, therange=self.therange, meta=('getdiscretizer', 'i8'))
 
         name = "Discretizer(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-        if super(Discretizer, self).isMatch(dataset,sourceColumns,targetColumns):
+        if super(Discretizer, self).isMatch(dataset, sourceColumns, targetColumns):
             if sourceColumns[0]['type'] == outputType.Numeric:
                 return True
         return False
 
-    def getIndex(self,value):
-        for i in range(0, len(self.upperbound)):
-            if self.upperbound[i] > value:
-                return i
-        return len(self.upperbound - 1)
-
     def getNumofBins(self) -> int:
-        return len(self.upperbound)
+        return self.upperbound

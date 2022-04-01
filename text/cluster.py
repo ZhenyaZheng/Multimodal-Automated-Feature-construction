@@ -21,10 +21,10 @@ class Cluster(object):
 
 class WordCluster(Cluster):
     def __init__(self, dataset, n_clusters=10):
-        if len(dataset) < n_clusters:
-            n_clusters = n_clusters // 2
+        if len(dataset) < n_clusters * 2:
+            n_clusters = n_clusters // 3
         super().__init__(n_clusters)
-        self.dataset = [ words.split(" ") for words in dataset]
+        self.dataset = [words.split(" ") for words in dataset]
         self.embed_dict = None    
 
     def avg_embed(self):

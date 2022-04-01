@@ -1,4 +1,5 @@
-from MAFC_Operator.operator_base import Operator
+
+
 class Operators:
 
     def __init__(self,sourcecolumn,targetcolumn,operator,secondoperator):#将构造数据加入数据集.
@@ -22,13 +23,13 @@ class Operators:
     def getName(self):
         str = "{sources:["
         for columnname in self.sourceColumns:
-            str = str + columnname.GetName()
+            str = str + columnname.getName()
             str = str + ","
         str = str + "];"
         str = str + "Targets:["
         if self.targetColumns is not None:
             for columnname in self.targetColumns :
-                str = str + columnname.GetName()
+                str = str + columnname.getName()
                 str = str + ","
         str = str + "];"
         str = str + self.operator.getName()

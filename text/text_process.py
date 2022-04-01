@@ -1,4 +1,7 @@
 import copy
+import dask.dataframe as dd
+import pandas as pd
+
 from text.Operators import *
 from text.TextOperator import TextOperator
 from logger.logger import logger
@@ -18,7 +21,7 @@ def getOperator(oplist, iglist):
         oplist = list(set(oplist) - set(iglist))
     return [eval(opt + "()") for opt in oplist]
 
-def process(textdata, opertorslist = None, ingorelist = None):
+def process(textdata, opertorslist=None, ingorelist=None):
     '''
 
     :param textdata:dask.dataframe
@@ -26,13 +29,17 @@ def process(textdata, opertorslist = None, ingorelist = None):
     :param ingorelist: [str]
     :return: dask.dataframe
     '''
-    copydata = copy.deepcopy(textdata)
+    pdata = pd.DataFrame()
+    data = dd.from_pandas(pdata, npartitions=10)
     operslist : list[TextOperator] = getOperator(opertorslist, ingorelist)
     for oper in operslist:
-        newseries = oper.process(copydata)
-        print(oper.getName())
-        #seriesdata = newseries.compute()
-        if newseries is not None and len(newseries.value_counts().compute()) > 1:
-            textdata[oper.getName()] = newseries
+        try:
+            newseries = oper.process(textdata)
+            #print(oper.getName())
+            #seriesdata = newseries.compute()
+            if newseries is not None and len(newseries.value_counts().compute()) > 1:
+                data[oper.getName()] = newseries
+        except Exception as ex:
+                logger.Error(f'Failed in func "text_process" with exception: {ex}')
 
-    return textdata
+    return data

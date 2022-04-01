@@ -20,10 +20,12 @@ class IsWeekend(Unary):
         '''
         columnname = sourceColumns[0]['name']
 
-        def isweekend(dates):
-            return [date.weekday() == 6 or date.weekday() == 5 for date in dates]
+        def isweekend(date):
+            if date.weekday() == 6 or date.weekday() == 5:
+                return 1
+            return 0
 
-        columndata = dataset[columnname].map_partitions(isweekend, meta=('isweekend', 'i8'))
+        columndata = dataset[columnname].apply(isweekend, meta=('isweekend', 'i8'))
         name = "IsWeekend(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

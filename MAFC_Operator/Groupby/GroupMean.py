@@ -17,16 +17,14 @@ class GroupMean(Groupby):
 
     def generateColumn(self,dataset, sourceColumns, targetColumns):
         oper = self.mapoper["mean"]
-        def getmean(df,sourceColumns):
+
+        def getmean(df, sourceColumns):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
-            columndata = []
-            for i,j in enumerate(data.iterrows()):
-                key = tuple(j[1].values)
-                columndata.append(self.data[key][oper])
-            return columndata
+            key = tuple(data.values)
+            return self.data[key][oper]
 
-        columndata = dataset.map_partitions(getmean,sourceColumns,meta=('getmean','f8'))
+        columndata = dataset.apply(getmean, sourceColumns=sourceColumns, meta=('getmean', 'f8'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns,targetColumns) + ")"
         newcolumn = {"name":name,"data":columndata}
         return newcolumn
