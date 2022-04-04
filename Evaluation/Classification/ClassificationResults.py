@@ -5,7 +5,7 @@ class ClassificationResults:
     def __init__(self, auc, logloss = None, fMeasureValues = None):
         self.auc = auc
         self.logLoss = logloss
-        self.fMeasureValues= fMeasureValues
+        self.fMeasureValues = fMeasureValues
 
     def getAuc(self):
         return self.auc

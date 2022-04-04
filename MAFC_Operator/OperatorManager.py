@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 from MAFC_Operator.Operators import Operators
 from logger.logger import logger
+from parallel import parallel
 from properties.properties import theproperty
 import pandas as pd
 from MAFC_Operator.ColumnInfo import ColumnInfo
@@ -30,7 +31,7 @@ class OperatorManager:
         :return: [Operators]
         '''
         unaryoperators = [self.getUnaryOperator(unaryoperator) for unaryoperator in unaryoperatorlist]
-        operators = self.getOperators(data,unaryoperators,theproperty.maxcombination)
+        operators = self.getOperators(data, unaryoperators, theproperty.maxcombination)
         logger.Info("UnaryOperator complete")
         return operators
 
@@ -180,7 +181,7 @@ class OperatorManager:
             attributecombination = self.getCombination(data["Info"], i)
             for ac in attributecombination:
                 if len(includeattributes) > 0:
-                    thecolumn = ac.copy()
+                    thecolumn = copy.deepcopy(ac)
                     thecolumn = list(set(thecolumn) & set(includeattributes))
                     if len(thecolumn) == 0:
                         continue
@@ -210,13 +211,24 @@ class OperatorManager:
 
     def reCalcFEvaluationScores(self, datadict, operators, fevaluation):
         if fevaluation.needToRecalcScore() == False:
-            return ;
+            return
         else:
             self.calculateFsocre(datadict, fevaluation,operators)
 
     def calculateFsocre(self, datadict, fevaluation, operators: list[Operators]):
-        numOfThread = theproperty.numofthread
+        numOfThread = theproperty.thread
         count = 0
+        def myfunction(ops):
+            datacopy = copy.deepcopy(datadict)
+            newcolumn = self.generateColumn(datacopy["data"], ops)
+            if newcolumn[1] == None or fevaluation == None:
+                logger.Error("generate column or fevaluation error!")
+            newfevaluation = copy.deepcopy(fevaluation)
+            templist = [newcolumn]
+            newfevaluation.initFEvaluation(templist)
+            fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
+            ops.setFScore(fsocre)
+
         if numOfThread == 1:
             for ops in operators:
                 datacopy = copy.deepcopy(datadict)
@@ -234,4 +246,5 @@ class OperatorManager:
                 fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
                 ops.setFScore(fsocre)
         else:
-            pass
+            parallel.ParallelForEachShare(myfunction, [[ops] for ops in operators])
+

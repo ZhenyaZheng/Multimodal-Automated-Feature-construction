@@ -53,7 +53,7 @@ class MLFEvaluation(FEvaluation):
         if self.classifier == None:
             logger.Error("Classifier is not initialized")
         oba = OperatorBasedAttributes()
-        candidateAttributes = oba.getOperatorsBasedAttributes()
+        candidateAttributes = oba.getOperatorsBasedAttributes(datadict, oa, candidateAttribute)
         for das in self.datasetAttributes.values():
             candidateAttributes[len(candidateAttributes)] = das
         classifierattribute = AttributeInfo("Classifier", outputType.Discrete, 0, 2)

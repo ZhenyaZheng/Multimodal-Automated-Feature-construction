@@ -1,5 +1,6 @@
 from MAFC_Operator.Groupby.groupby import Groupby
 from MAFC_Operator.operator_base import outputType
+from logger.logger import logger
 
 
 class GroupMax(Groupby):
@@ -18,13 +19,16 @@ class GroupMax(Groupby):
     def generateColumn(self, dataset, sourceColumns, targetColumns):
         oper = self.mapoper["max"]
 
-        def getmax(df, sourceColumns):
+        def getmax(df, sourceColumns, thedatadict):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
             key = tuple(data.values)
-            return self.data[key][oper]
+            if thedatadict.get(key) is None:
+                logger.Error("Groupby.data is not init")
+            return thedatadict[key][oper]
 
-        columndata = dataset.apply(getmax, sourceColumns=sourceColumns, meta=('getmax', 'f8'), axis=1)
+        keyname = self.getKeyname(sourceColumns, targetColumns)
+        columndata = dataset.apply(getmax, sourceColumns=sourceColumns, thedatadict=self.getData(keyname), meta=('getmax', 'f8'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

@@ -1,22 +1,62 @@
-import numpy as np
+import os
+from datetime import datetime
+from logger.logger import logger
 from Evaluation.Evaluation import *
 from Evaluation.Classification.ClassificationResults import ClassificationResults
 from properties.properties import theproperty
 from sklearn.metrics import roc_auc_score, f1_score
 from sklearn.metrics import log_loss
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.linear_model import LogisticRegressionCV
 from dask_ml.wrappers import ParallelPostFit
 from dask_ml.model_selection import train_test_split
 from distributed import Client
-
+from MAFC_Operator.Operators import Operators
 
 class WEvaluation(Evaluation):
     def __init__(self):
         super(WEvaluation, self).__init__()
 
-    def evaluationAsave(self):
-        pass
+    def evaluationAsave(self, currentresult: ClassificationResults, iteration=0, addatts:list[Operators]=None, nums=0, newfile=True):
+        sb = ''
+        if newfile:
+            sb += "Iteration,Added_Attributes,LogLoss,AUC,F1Score"
+            sb += ",Chosen_Attributes_FScore,Chosen_Attributes_WScore,Num_Of_Evaluated_Attributes_In_Iteration"
+            sb += "Iteration_Completion_time"
+            sb += os.linesep
+
+        sb += str(iteration) + ","
+        sb += '"['
+        if addatts is not None:
+            for ats in addatts:
+                sb += ats.getName()
+                sb += ","
+        sb += ']",'
+        sb += str(currentresult.getLogLoss()) + ","
+        sb += str(currentresult.getAuc()) + ','
+        sb += str(currentresult.getFMeasureValues()) + ","
+        if addatts is not None:
+            for ats in addatts:
+                sb += ats.getFScore()
+                sb += ","
+            sb += ']","['
+            for ats in addatts:
+                sb += ats.getWScore()
+                sb += ","
+            sb += ']",'
+        sb += str(nums) + ","
+        date = datetime.now()
+        sb += date.__str__()
+
+        try:
+            filepath = theproperty.resultfilepath + theproperty.datasetname + ".csv"
+            if newfile:
+                fw = open(filepath, "w")
+            else:
+                fw = open(filepath, "a")
+            fw.write(sb + "\n")
+            fw.close()
+        except Exception as ex:
+            logger.Error("IOException: " + ex)
 
     def ProduceClassifications(self, dataset, classifier):
         classificationresult = self.getClassifications(dataset, classifier)

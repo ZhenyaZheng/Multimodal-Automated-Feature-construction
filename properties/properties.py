@@ -29,4 +29,5 @@ class properties:
         self.classifiersforMLAttributes = ["RandomForest"]
         self.targetindex = -1
         self.image_path = None
+        self.resultfilepath = "data/result/"
 theproperty = properties()

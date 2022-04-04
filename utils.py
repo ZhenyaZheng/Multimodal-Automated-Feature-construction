@@ -1,5 +1,7 @@
+import copy
 import os
 import pickle
+from MAFC_Operator.OperatorManager import OperatorManager
 from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
 from Evaluation.FEvaluation.MLFEvalution import MLFEvaluation
 from Evaluation.WEvaluation.AucWrapperEvaluation import AucWrapperEvaluation
@@ -43,16 +45,21 @@ def getInfo(data):
     lenofdata = len(data)
     for i in data:
         name = i
-        datavalues = data[name].value_counts().compute()
-        lensofvalues = len(datavalues)
-        if lenofdata == lensofvalues or lensofvalues == 1:
-            del data[name]
-            continue
         if data[name].dtype == "datetime64[ns]":
             columninfo = ColumnInfo(None, None, None, name, False, outputType.Date)
+            info.append(columninfo)
+            continue
         elif data[name].dtype == "float64" or data[name].dtype == "float32":
             columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
-        elif data[name].dtype == "int64" or data[name].dtype == "int32":
+            info.append(columninfo)
+            continue
+        datavalues = data[name].value_counts().compute()
+        lensofvalues = len(datavalues)
+        if (lenofdata == lensofvalues or lensofvalues == 1):
+            del data[name]
+            continue
+
+        if data[name].dtype == "int64" or data[name].dtype == "int32":
             if lensofvalues >= 30:
                 data[name].astype("float32")
                 columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
@@ -227,3 +234,4 @@ def generateModelData(dataset: Dataset):
     datadict = getDatadict(dataset)
     mlam = MLAttributeManager()
     mlam.getDatasetInstances(datadict)
+

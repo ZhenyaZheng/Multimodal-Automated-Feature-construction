@@ -1,10 +1,10 @@
 from MAFC_Operator.Groupby.groupby import Groupby
 from MAFC_Operator.operator_base import outputType
-
+from logger.logger import logger
 
 class GroupCount(Groupby):
     def __init__(self):
-        super(GroupCount,self).__init__()
+        super(GroupCount, self).__init__()
 
     def requiredInputType(self) -> outputType:
         return outputType.Discrete
@@ -17,19 +17,21 @@ class GroupCount(Groupby):
 
     def generateColumn(self, dataset, sourceColumns, targetColumns):
         oper = self.mapoper["count"]
-        def getcount(df, sourceColumns):
+        def getcount(df, sourceColumns, thedatadict):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
             key = tuple(data.values)
-            return self.data[key][oper]
-
-        columndata = dataset.apply(getcount, sourceColumns=sourceColumns, meta=('getcount', 'f8'), axis=1)
+            if thedatadict.get(key) is None:
+                logger.Error("Groupby.data is not init")
+            return thedatadict[key][oper]
+        keyname = self.getKeyname(sourceColumns, targetColumns)
+        columndata = dataset.apply(getcount, sourceColumns=sourceColumns, thedatadict=self.getData(keyname),meta=('getcount', 'f8'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-        if super(GroupCount,self).isMatch(dataset,sourceColumns,targetColumns):
+        if super(GroupCount, self).isMatch(dataset, sourceColumns, targetColumns):
             if targetColumns[0]['type'] == outputType.Numeric:
                 return True
         return False

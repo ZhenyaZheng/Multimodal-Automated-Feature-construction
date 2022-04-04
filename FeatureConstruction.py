@@ -1,4 +1,5 @@
 import copy
+import parallel.parallel
 from utils import *
 from Evaluation import *
 from MAFC_Operator import OperatorManager
@@ -40,12 +41,12 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
     wevaluation = getEvaluation(theproperty.wrapper, datadict)
 
     #进行初始评估
-    wevaluation.evaluationAsave()
-    currentscore = wevaluation.produceScore()
+    currentscore = wevaluation.produceScore(datadict, None, None, None)
+
     logger.Info("Initial score is : " + currentscore)
     #计算
     currentclassifications = wevaluation.ProduceClassifications(datadict, theproperty.classifier)
-
+    wevaluation.evaluationAsave(currentclassifications)
     #复制数据集
     datasetcopy = copy.deepcopy(datadict)
     om = OperatorManager()
@@ -62,7 +63,8 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
     evaluationatts = 0
     chosenoperators = None
     toprankingoperators = None
-    while iternums:
+    iters = 1
+    while iters <= iternums:
         #重新计算基本特征
         fevaluation.recalculateDatasetBasedFeatures(datasetcopy);
         #重新使用F计算分数
@@ -79,21 +81,34 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
         tempcurrentclassifications = currentclassifications
         #使用W计算分数,并行计算
         numofthread = theproperty.thread
+
+        def myevaluationfunc(oop):
+            if oop.getFScore() is not None and oop.getFScore() > 0.001:
+                datacopy = copy.deepcopy(datasetcopy)
+                newcolumn = om.generateColumn(datacopy["data"], oop, False)
+                wscore = wevaluation.produceScore(datasetcopy, tempcurrentclassifications, oop, newcolumn)
+                oop.setWScore(wscore)
+                if 0 < wscore:
+                    toprankingoperators.append(oop)
+                return [wscore]
+
         if numofthread == 1:
             for oop in otheroperators:
                 if(oop.getFScore() != None and oop.getFScore() >= theproperty.fsocre and evaluationatts <= theproperty.maxevaluationattsperiter):
                     datacopy = copy.deepcopy(datasetcopy)
                     newcolumn = om.generateColumn(datacopy["data"], oop, False)
-                    wsocre = wevaluation.produceScore(datasetcopy, tempcurrentclassifications, oop, newcolumn)
-                    oop.setWScore(wsocre)
+                    wscore = wevaluation.produceScore(datasetcopy, tempcurrentclassifications, oop, newcolumn)
+                    oop.setWScore(wscore)
                     evaluationatts += 1
-                    if 0 < wsocre:
+                    if 0 < wscore:
                         toprankingoperators.append(oop)
 
                     if(evaluationatts % 100 == 0):
                         logger.Info("evaluated ", evaluationatts, " attributes")
         else:
-            pass
+            paraevaluatedattrs = parallel.palallelForEach(myevaluationfunc, [[oop] for oop in otheroperators])
+            evaluationatts += len(paraevaluatedattrs)
+
         # 筛选特征
         totalnumofwrapperevaluation += evaluationatts
         if chosenoperators == None:
@@ -105,8 +120,8 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
 
         om.GenerateAddColumnToData(datadict, chosenoperators)
         currentclassifications = wevaluation.ProduceClassifications(datadict, theproperty.classifier)
-        wevaluation.evaluationAsave()
-        iternums = iternums - 1
+        wevaluation.evaluationAsave(currentclassifications, iters, chosenoperators, totalnumofwrapperevaluation, False)
+        iters += 1
     return datadict['data']
 
 

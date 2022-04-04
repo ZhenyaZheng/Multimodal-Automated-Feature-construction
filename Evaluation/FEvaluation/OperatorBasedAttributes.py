@@ -23,8 +23,7 @@ class OperatorBasedAttributes:
         :param oa: Operators
         :return: {}
         '''
-        #try:
-        if 1:
+        try:
             datacopy = copy.deepcopy(datadict)
             #留坑
             om = OperatorManager()
@@ -43,10 +42,10 @@ class OperatorBasedAttributes:
 
             #self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict['data'], oa)
 
+        except Exception as ex:
+            logger.Error(f'Failed in func "getOperatorsBasedAttributes" with exception: {ex}')
+        finally:
             return self.generateInstanceAttributesMap()
-        # except Exception as ex:
-        #     logger.Error(f'Failed in func "getOperatorsBasedAttributes" with exception: {ex}')
-        #     return None
 
     def ProcessOperators(self, oa: Operators):
         '''

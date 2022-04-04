@@ -30,7 +30,7 @@ class GroupbyTime(Operator):
             return False
 
         if targetColumns[0]['type'] != outputType.Discrete or targetColumns[0]['type'] != outputType.Numeric:
-            return  False
+            return False
         datenum = 0
         for sc in sourceColumns:
             if sc['type'] != outputType.Discrete or sc['type'] != outputType.Date:
@@ -42,16 +42,5 @@ class GroupbyTime(Operator):
         return True
 
     def processTrainingSet(self, dataset, sourceColumns, targetColumns):
-        sname = []
-        for sc in sourceColumns:
-            sname.append(sc['name'])
-        tname = targetColumns[0]['name']
-        columndata = dataset.groupby(sname)[tname].agg(["max","min","count","mean","std"])
-        thedata = columndata.compute()
-        value = [i for i in thedata.values]
-        key = [i for i in thedata.index]
-        if len(value) != len(key):
-            raise ("GroupBy Process Error!")
-        self.data = {}
-        for i in range(0,len(value)):
-            self.data[key[i]] = value[i]
+        pass
+

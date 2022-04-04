@@ -5,7 +5,7 @@ from utils import getDatadict
 from FeatureConstruction import FC, getDatadict
 from Evaluation.FEvaluation.MLAttributeManager import MLAttributeManager
 if __name__ == "__main__":
-    datapath = {"image_path": None, "text_path": None, "tabular_path": "./data/datasets/heart.csv"}
+    datapath = {"image_path": None, "text_path": None, "tabular_path": "data/datasets/heart.csv"}
     dataset = Dataset(datapath)
     datadict = getDatadict(dataset)
     mlam = MLAttributeManager()

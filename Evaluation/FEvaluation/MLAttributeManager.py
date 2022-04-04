@@ -1,20 +1,19 @@
-import copy
 import os.path
 from shutil import copyfile
 import numpy as np
 import pandas as pd
 from distributed import Client
+import parallel.parallel
 from Evaluation.FEvaluation.OperatorBasedAttributes import OperatorBasedAttributes
 import dask.dataframe
 from Evaluation.FEvaluation.DatasetAttributes import DatasetAttributes
 from Evaluation.FEvaluation.AttributeInfo import AttributeInfo
-from properties.properties import theproperty
-from MAFC_Operator.OperatorManager import OperatorManager
 from Evaluation.WEvaluation.WEvaluation import WEvaluation
 from utils import *
 from dask_ml.wrappers import ParallelPostFit
 from MAFC_Operator.operator_base import outputType
 from logger.logger import logger
+from properties.properties import theproperty
 
 class MLAttributeManager:
     def __init__(self):
@@ -102,12 +101,12 @@ class MLAttributeManager:
         for classifier in classifiers:
             evaluationresult = evaluator.runClassifier(classifier, datadict)
             originalAUC = evaluator.calculateAUC(evaluationresult)
-            datasetatts = {}
-            #datasetatts = dbas.getDatasetBasedFeature(datadict, classifier)
 
-            #classifieratt = AttributeInfo("Classifier", outputType.Discrete, self.getClassifierIndex(classifier), 3)
+            datasetatts = dbas.getDatasetBasedFeature(datadict, classifier)
 
-            #datasetatts[len(datasetatts)] = classifieratt
+            classifieratt = AttributeInfo("Classifier", outputType.Discrete, self.getClassifierIndex(classifier), 3)
+
+            datasetatts[len(datasetatts)] = classifieratt
 
             oms = OperatorManager()
             unaryoperlist = theproperty.unaryoperator
@@ -117,10 +116,37 @@ class MLAttributeManager:
             otheroperators = oms.OtherOperator(datadict, otheroperlist)
             otheroperators = unaryoperators + otheroperators
             numofthread = theproperty.thread
+            index = 1
+
+            def myfunction(ops):
+
+                datacopy = copy.deepcopy(datadict)
+                candidateatt = oms.generateColumn(datacopy["data"], ops, False)
+                obas = OperatorBasedAttributes()
+                candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
+                oms.addColumn(datacopy, candidateatt)
+                evaluationresult = evaluator.runClassifier(classifier, datacopy)
+                auc = evaluator.calculateAUC(evaluationresult)
+                deltaAUC = auc - originalAUC
+                if deltaAUC > 0.01:
+                    classatt = AttributeInfo("classattribute", outputType.Discrete, 1, 2)
+                    logger.Info("find positive match")
+                else:
+                    classatt = AttributeInfo("classattribute", outputType.Discrete, 0, 2)
+
+                for datainfos in datasetatts.values():
+                    candidateattsdict[len(candidateattsdict)] = datainfos
+                candidateattsdict[len(candidateattsdict)] = classatt
+                candidateattslist.append(candidateattsdict)
+
+
             if numofthread > 1:
-                pass
+                parallel.palallelForEach(myfunction, [[oop] for oop in otheroperators])
             else:
                 for ops in otheroperators:
+                    #if index > 20:break
+                    if index % 100 == 0:
+                        logger.Info("have finish " + str(index) + " operators")
                     datacopy = copy.deepcopy(datadict)
                     candidateatt = oms.generateColumn(datacopy["data"], ops, False)
                     obas = OperatorBasedAttributes()
@@ -139,6 +165,7 @@ class MLAttributeManager:
                         candidateattsdict[len(candidateattsdict)] = datainfos
                     candidateattsdict[len(candidateattsdict)] = classatt
                     candidateattslist.append(candidateattsdict)
+                    index += 1
         return candidateattslist
 
     def generateValuesTabular(self, dataattsvalues):
@@ -148,7 +175,7 @@ class MLAttributeManager:
         :return: pandas.dataframe
         '''
         attributes = self.generateAtts(dataattsvalues[0], len(dataattsvalues))
-        df = pd.DataFrame(name = "MLtarindata")
+        df = pd.DataFrame()
         for atts in attributes:
             df.insert(len(df.columns), atts.name, atts)
         num = 0
@@ -169,15 +196,17 @@ class MLAttributeManager:
         '''
         attributelist = []
         for attif in dataattsvalue.values():
-            datase = np.zeros(sizen)
+
             if attif.getType() == outputType.Discrete:
                 type = "int32"
             elif attif.getType() == outputType.Numeric:
                 type = "float32"
             else:
                 logger.Error("MLatt is not support except int and float type")
+            datase = np.zeros(sizen, type)
             att = pd.core.series.Series(datase, None, type, attif.getName())
             attributelist.append(att)
+        return attributelist
 
     def getClassifierIndex(self, classifiername: str):
         index = 0

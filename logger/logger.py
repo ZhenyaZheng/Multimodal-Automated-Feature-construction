@@ -12,10 +12,11 @@ class logger:
 
     @staticmethod
     def Error(msg: str, ex: Exception = None):
-        print(msg)
+
         excetype, exceobj, excetb = sys.exc_info()
         fname = os.path.split(excetb.tb_frame.f_code.co_filename)[1]
         print(excetype, fname, excetb.tb_lineno)
+        raise (msg)
 
     @staticmethod
     def Warnning(msg: str):
