@@ -31,7 +31,7 @@ class InformationGainFilterEvaluator(FEvaluation):
                 indexkey = tuple(indexlist)
                 if self.valuesPerKey.get(indexkey) == None:
                     numofunique = analyzedDatasets["targetInfo"].getNumsOfUnique()
-                    if numofunique == None:
+                    if numofunique is None:
                         logger.Error(analyzedDatasets["targetInfo"].getName(), "Discrete Column is not exist numsofunique")
                     self.valuesPerKey[indexkey] = list(np.zeros(numofunique))
                 self.valuesPerKey[indexkey][value] += 1

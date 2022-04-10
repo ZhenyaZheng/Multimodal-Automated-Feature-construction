@@ -16,7 +16,8 @@ class logger:
         excetype, exceobj, excetb = sys.exc_info()
         fname = os.path.split(excetb.tb_frame.f_code.co_filename)[1]
         print(excetype, fname, excetb.tb_lineno)
-        raise (msg)
+        print(msg)
+        raise (ex)
 
     @staticmethod
     def Warnning(msg: str):

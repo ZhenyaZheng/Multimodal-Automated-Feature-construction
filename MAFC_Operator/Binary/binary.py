@@ -16,7 +16,8 @@ class Binary(Operator):
         raise NotImplementedError("requiredInputType is an abstract method")
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-
+        if sourceColumns is None or targetColumns is None:
+            return False
         if len(sourceColumns) != 1 or len(targetColumns) != 1 :
             return False
         if sourceColumns[0]['type'] != outputType.Numeric or targetColumns[0]['type'] != outputType.Numeric:

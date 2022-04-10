@@ -17,7 +17,7 @@ class Unary(Operator):
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
 
-        if len(sourceColumns) != 1 or (targetColumns != None and len(targetColumns) != 0):
+        if len(sourceColumns) != 1 or (targetColumns is not None and len(targetColumns) != 0):
             return False
         else:
             return True

@@ -1,5 +1,6 @@
 import copy
 import parallel.parallel
+from Serialize import serialize, deserialize
 from utils import *
 from Evaluation import *
 from MAFC_Operator import OperatorManager
@@ -43,7 +44,7 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
     #进行初始评估
     currentscore = wevaluation.produceScore(datadict, None, None, None)
 
-    logger.Info("Initial score is : " + currentscore)
+    logger.Info("Initial score is : " + str(currentscore))
     #计算
     currentclassifications = wevaluation.ProduceClassifications(datadict, theproperty.classifier)
     wevaluation.evaluationAsave(currentclassifications)
@@ -60,18 +61,17 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
     #不应该重复添加
     columnaddpreiter = None
     totalnumofwrapperevaluation = 0
-    evaluationatts = 0
-    chosenoperators = None
-    toprankingoperators = None
+    finalchosenops = []
+
     iters = 1
     while iters <= iternums:
         #重新计算基本特征
-        fevaluation.recalculateDatasetBasedFeatures(datasetcopy);
-        #重新使用F计算分数
-        om.reCalcFEvaluationScores(datasetcopy, operators, fevaluation)
+        fevaluation.recalculateDatasetBasedFeatures(datasetcopy)
         # 构造特征
         # 应用聚集操作
         otheroperators = om.OtherOperator(datasetcopy, otheroperator_list)
+        # 重新使用F计算分数
+        om.reCalcFEvaluationScores(datasetcopy, otheroperators, fevaluation)
         #排序
         otheroperators = rankerFilter.rankAndFilter(otheroperators, columnaddpreiter)
 
@@ -104,24 +104,25 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
                         toprankingoperators.append(oop)
 
                     if(evaluationatts % 100 == 0):
-                        logger.Info("evaluated ", evaluationatts, " attributes")
+                        logger.Info("evaluated ", str(evaluationatts), " attributes")
         else:
-            paraevaluatedattrs = parallel.palallelForEach(myevaluationfunc, [[oop] for oop in otheroperators])
+            paraevaluatedattrs = parallel.palallelForEach(myevaluationfunc, [oop for oop in otheroperators])
             evaluationatts += len(paraevaluatedattrs)
 
         # 筛选特征
         totalnumofwrapperevaluation += evaluationatts
-        if chosenoperators == None:
-            if toprankingoperators != None:
+        if chosenoperators is None:
+            if len(toprankingoperators) > 0:
                 chosenoperators = copy.deepcopy(toprankingoperators)
             else:
                 logger.Info("No attributes are chosen,iteration over!")
                 break
-
+        finalchosenops += chosenoperators
         om.GenerateAddColumnToData(datadict, chosenoperators)
         currentclassifications = wevaluation.ProduceClassifications(datadict, theproperty.classifier)
         wevaluation.evaluationAsave(currentclassifications, iters, chosenoperators, totalnumofwrapperevaluation, False)
         iters += 1
+    serialize(theproperty.finalchosenopspath + "finalchosenops", finalchosenops)
     return datadict['data']
 
 
@@ -148,9 +149,9 @@ def _FC_(datadict, isiteration: bool = False, iternums: int = 1, operatorbyself:
         otheroperator_list = list(set(otheroperator_list) - set(operatorignore["tabular"]['other']))
 
     if isiteration is False:
-        df = _FC_Noiter_(datadict,unaryoperator_list,otheroperator_list)
+        df = _FC_Noiter_(datadict, unaryoperator_list, otheroperator_list)
     else:
-        df = _FC_Iter_(datadict,unaryoperator_list,otheroperator_list,iternums)
+        df = _FC_Iter_(datadict, unaryoperator_list, otheroperator_list, iternums)
 
     return df
 
@@ -166,4 +167,9 @@ def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: dic
     datadict = getDatadict(dataset, operatorbyself, operatorignore)
     df = _FC_(datadict, isiteration, iternums, operatorbyself, operatorignore)
     return df
+
+def generateTestData(datadict):
+    operators = deserialize(theproperty.finalchosenopspath)
+    om = OperatorManager()
+    om.GenerateAddColumnToData(datadict, operators)
 

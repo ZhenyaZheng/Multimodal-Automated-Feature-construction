@@ -24,15 +24,11 @@ class OperatorBasedAttributes:
         :return: {}
         '''
         try:
-            datacopy = copy.deepcopy(datadict)
-            #留坑
-            om = OperatorManager()
-            om.addColumn(datacopy, evaluationatt)
             tempList = []
             tempList.append(evaluationatt)
             igfe = InformationGainFilterEvaluator()
             igfe.initFEvaluation(tempList)
-            self.IGScore = igfe.produceScore(datacopy, None, None, None)
+            self.IGScore = igfe.produceScore(datadict, None, None, None)
 
             self.ProcessOperators(oa)
 
@@ -40,7 +36,7 @@ class OperatorBasedAttributes:
 
             self.performStatisticalTestsOnSourceAndTargetAttributes(datadict['data'], oa)
 
-            #self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict['data'], oa)
+            self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict, oa)
 
         except Exception as ex:
             logger.Error(f'Failed in func "getOperatorsBasedAttributes" with exception: {ex}')
@@ -166,19 +162,19 @@ class OperatorBasedAttributes:
             if oa.sourceColumns[0].getType() == outputType.Discrete and oa.sourceColumns[1].getType() == outputType.Discrete:
                 templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
                 templist2 = list(dataset[oa.sourceColumns[1].getName()].values.compute())
-                list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2)
+                list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2, oa.sourceColumns[0].getNumsOfUnique() , oa.sourceColumns[1].getNumsOfUnique())
                 tempval = None
                 if list1 is not None:
                     tempval = self.statisticoperation.chisquare(list1)
-                if tempval != None:
+                if tempval is not None:
                     self.chiSquareTestValueForSourceAttributes = tempval
                 else:
                     self.chiSquareTestValueForSourceAttributes = -1
         self.pairedTTestValueForSourceAndTargetAttirbutes = 0
-        if len(oa.sourceColumns) == 1 and oa.sourceColumns[0].getType() == outputType.Numeric and oa.targetColumns != None and len(oa.targetColumns) == 1:
+        if len(oa.sourceColumns) == 1 and oa.sourceColumns[0].getType() == outputType.Numeric and oa.targetColumns is not None and len(oa.targetColumns) == 1:
             templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
             templist2 = list(dataset[oa.targetColumns[0].getName()].values.compute())
-            self.pairedTTestValueForSourceAndTargetAttirbutes = stats.ttest_rel(templist1,templist2)
+            self.pairedTTestValueForSourceAndTargetAttirbutes = stats.ttest_rel(templist1, templist2)
 
         self.maxChiSquareTsetForSourceAndTargetAttributes = 0
         self.minChiSquareTsetForSourceAndTargetAttributes = 0
@@ -204,7 +200,7 @@ class OperatorBasedAttributes:
                     for j in range(i+1, len(columnstoanalyze)):
                         templist1 = list(dataset[columnstoanalyze[i].getName()].values.compute())
                         templist2 = list(dataset[columnstoanalyze[j].getName()].values.compute())
-                        list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1,templist2)
+                        list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2, columnstoanalyze[i].getNumsOfUnique() , columnstoanalyze[j].getNumsOfUnique())
                         chiSquareTestVal = self.statisticoperation.chisquare(list1)
                         if list1 is not None:
                             continue
@@ -215,6 +211,47 @@ class OperatorBasedAttributes:
                         self.minChiSquareTsetForSourceAndTargetAttributes = np.min(chiSquareTestValues)
                         self.avgChiSquareTsetForSourceAndTargetAttributes = np.mean(chiSquareTestValues)
                         self.stdChiSquareTsetForSourceAndTargetAttributes = np.std(chiSquareTestValues)
+
+    def performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(self, datadict, oa: Operators):
+        columnstoanalyze = []
+        for ci in oa.sourceColumns:
+            if ci.getType() == outputType.Discrete:
+                columnstoanalyze.append(ci)
+        if oa.targetColumns is not None:
+            for ci in oa.targetColumns:
+                if ci.getType() == outputType.Discrete:
+                    columnstoanalyze.append(ci)
+
+        chisquaretestvalues = []
+        dataset = datadict["data"]
+        for ci in columnstoanalyze:
+            for dataci in datadict["Info"]:
+                if dataci in oa.sourceColumns or dataci in oa.targetColumns:
+                    continue
+
+                chisquaretestvalue = None
+                if dataci.getType() == outputType.Discrete:
+                    templist1 = list(dataset[ci.getName()].values.compute())
+                    templist2 = list(dataset[dataci.getName()].values.compute())
+                    list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1,
+                                                                        templist2, ci.getNumsOfUnique(), dataci.getNumsOfUnique())
+                    if list1 is not None:
+                        chisquaretestvalue = self.statisticoperation.chisquare(list1)
+                if chisquaretestvalue is not None:
+                    chisquaretestvalues.append(chisquaretestvalue)
+                else:chisquaretestvalues.append(0)
+
+        self.maxChiSquareTestvalueForSourceDatasetAttributes = 0
+        self.minChiSquareTestvalueForSourceDatasetAttributes = 0
+        self.avgChiSquareTestvalueForSourceDatasetAttributes = 0
+        self.stdChiSquareTestvalueForSourceDatasetAttributes = 0
+
+        if len(chisquaretestvalues) > 0:
+            self.maxChiSquareTestvalueForSourceDatasetAttributes = np.max(chisquaretestvalues)
+            self.minChiSquareTestvalueForSourceDatasetAttributes = np.min(chisquaretestvalues)
+            self.avgChiSquareTestvalueForSourceDatasetAttributes = np.mean(chisquaretestvalues)
+            self.stdChiSquareTestvalueForSourceDatasetAttributes = np.std(chisquaretestvalues)
+
 
     def generateInstanceAttributesMap(self):
         attributes = {}
@@ -281,7 +318,18 @@ class OperatorBasedAttributes:
         attributes[len(attributes)] = AttributeInfo("stdChiSquareTsetForSourceAndTargetAttributes",
                                                     outputType.Numeric,
                                                     self.stdChiSquareTsetForSourceAndTargetAttributes, -1)
-
+        attributes[len(attributes)] = AttributeInfo("maxChiSquareTestvalueForSourceDatasetAttributes",
+                                                    outputType.Numeric,
+                                                    self.maxChiSquareTestvalueForSourceDatasetAttributes, -1)
+        attributes[len(attributes)] = AttributeInfo("minChiSquareTestvalueForSourceDatasetAttributes",
+                                                    outputType.Numeric,
+                                                    self.minChiSquareTestvalueForSourceDatasetAttributes, -1)
+        attributes[len(attributes)] = AttributeInfo("avgChiSquareTestvalueForSourceDatasetAttributes",
+                                                    outputType.Numeric,
+                                                    self.avgChiSquareTestvalueForSourceDatasetAttributes, -1)
+        attributes[len(attributes)] = AttributeInfo("stdChiSquareTestvalueForSourceDatasetAttributes",
+                                                    outputType.Numeric,
+                                                    self.stdChiSquareTestvalueForSourceDatasetAttributes, -1)
 
         return attributes
 

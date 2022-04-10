@@ -190,7 +190,7 @@ class DatasetAttributes:
                 if cl.getName() == ci.name:
                     column = cl
                     break
-            if column == None:
+            if column is None:
                 logger.Error(ci.name, "columninfo is not exist")
             newcolumn = [ci.name, ci, column]
             tempList = []
@@ -268,7 +268,7 @@ class DatasetAttributes:
             for j in range(i + 1, len(self.discreteAttributesList)):
                 if i != j:
 
-                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], self.discreteAttributesList[i],self.discreteAttributesList[j])
+                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], self.discreteAttributesList[i], self.discreteAttributesList[j])
                     if counts is None:
                         continue
                     testVal = self.stcop.chisquare(counts)
@@ -341,6 +341,8 @@ class DatasetAttributes:
         attributes[len(attributes)] = AttributeInfo("numOfFeatures", outputType.Numeric, self.numOfFeatures, -1)
         attributes[len(attributes)] = AttributeInfo("numOfNumericAttributes", outputType.Numeric, self.numOfNumericAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("numOfDiscreteAttributes", outputType.Numeric, self.numOfDiscreteAttributes, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("ratioOfNumericAttributes", outputType.Numeric, self.ratioOfNumericAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("ratioOfDiscreteAttributes", outputType.Numeric, self.ratioOfDiscreteAttributes,-1)
         attributes[len(attributes)] = AttributeInfo("maxNumberOfDiscreteValuesPerAttribute", outputType.Numeric,
@@ -349,6 +351,8 @@ class DatasetAttributes:
                              self.minNumberOfDiscreteValuesPerAttribute, -1)
         attributes[len(attributes)] = AttributeInfo("avgNumOfDiscreteValuesPerAttribute", outputType.Numeric,
                               self.avgNumOfDiscreteValuesPerAttribute, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("minPairedTTestValueForNumericAttributes", outputType.Numeric,
                               self.minPairedTTestValueForNumericAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("avgPairedTTestValueForNumericAttributes", outputType.Numeric,
@@ -359,6 +363,8 @@ class DatasetAttributes:
                               self.maxChiSquareValueForDiscreteAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("minChiSquareValueForDiscreteAttributes", outputType.Numeric,
                               self.minChiSquareValueForDiscreteAttributes, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("avgChiSquareValueForDiscreteAttributes", outputType.Numeric,
                               self.avgChiSquareValueForDiscreteAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("stdChiSquareValueForDiscreteAttributes", outputType.Numeric,
@@ -367,16 +373,22 @@ class DatasetAttributes:
         attributes[len(attributes)] = AttributeInfo("maxChiSquareValueForDiscreteAndDiscreteAttributes", outputType.Numeric,
                               self.maxChiSquareValueForDiscreteAndDiscreteAttributes, -1)
         attributes[len(attributes)] = AttributeInfo("logLossValues", outputType.Numeric, self.logLossValues, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("maxIGVal", outputType.Numeric, self.maxIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("minIGVal", outputType.Numeric, self.minIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("avgIGVal", outputType.Numeric, self.avgIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("stdIGVal", outputType.Numeric, self.stdIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("discreteAttsMaxIGVal", outputType.Numeric, self.discreteAttsMaxIGVal, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("discreteAttsMinIGVal", outputType.Numeric, self.discreteAttsMinIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("discreteAttsAvgIGVal", outputType.Numeric, self.discreteAttsAvgIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("discreteAttsStdIGVal", outputType.Numeric, self.discreteAttsStdIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("numericAttsMaxIGVal", outputType.Numeric, self.numericAttsMaxIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("numericAttsMinIGVal", outputType.Numeric, self.numericAttsMinIGVal, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("numericAttsAvgIGVal", outputType.Numeric, self.numericAttsAvgIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("numericAttsStdIGVal", outputType.Numeric, self.numericAttsStdIGVal, -1)
         attributes[len(attributes)] = AttributeInfo("minChiSquareValueForDiscreteAndDiscreteAttributes", outputType.Numeric,
@@ -386,23 +398,26 @@ class DatasetAttributes:
         attributes[len(attributes)] = AttributeInfo("stdChiSquareValueForDiscreteAndDiscreteAttributes", outputType.Numeric,
                               self.stdChiSquareValueForDiscreteAndDiscreteAttributes, -1)
         
-        attributes[len(attributes)] = AttributeInfo("FMeasureValues" , outputType.Numeric,
+
+        attributes[len(attributes)] = AttributeInfo("FMeasureValues", outputType.Numeric,
                                             self.FMeasureValues, -1)
 
         return attributes
 
-    def generateDiscreteAttributesCategoryIntersection(self, data, col1, col2):
+    def generateDiscreteAttributesCategoryIntersection(self, data, col1, col2, n: int = theproperty.DiscretizerBinsNumber, m: int = theproperty.DiscretizerBinsNumber):
         newcol1 = col1
         newcol2 = col2
         if type(col1) != list:
+            n = col1.getNumsOfUnique()
             newcol1 = data[col1.getName()].compute().values
         if type(col2) != list:
+            m = col2.getNumsOfUnique()
             newcol2 = data[col2.getName()].compute().values
         if len(newcol1) != len(newcol2):
             return None
-        n = len(newcol1)
-        list1 = np.zeros((n, n), "int32")
-        for i in range(0, n):
+
+        list1 = np.zeros((n, m), "int32")
+        for i in range(0, len(newcol1)):
             list1[newcol1[i]][newcol2[i]] += 1
         return list1
 

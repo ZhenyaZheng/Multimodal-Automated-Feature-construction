@@ -1,8 +1,8 @@
-
+from MAFC_Operator.operator_base import outputType
 
 class Operators:
 
-    def __init__(self,sourcecolumn,targetcolumn,operator,secondoperator):#将构造数据加入数据集.
+    def __init__(self, sourcecolumn, targetcolumn, operator, secondoperator):#将构造数据加入数据集.
         self.sourceColumns = sourcecolumn
         self.targetColumns = targetcolumn
         self.operator = operator
@@ -55,4 +55,17 @@ class Operators:
         return self.filterscore > other.filterscore
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.getName() == other.getName() and self.getType() == other.getType()
+
+    def getNumofBins(self):
+        if self.secondoperators is not None:
+            if self.secondoperators.getOutputType() == outputType.Discrete:
+                return self.secondoperators.getNumofBins()
+        else:
+            if self.operator.getOutputType() == outputType.Discrete:
+                return self.operator.getNumofBins()
+        return -1
+
+

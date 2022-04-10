@@ -1,5 +1,7 @@
 import copy
 import datetime
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 from MAFC_Operator.Operators import Operators
 from logger.logger import logger
@@ -41,40 +43,72 @@ class OperatorManager:
         :param os:Operators
         :return: [values]
         '''
-        operator = ops.operator
+        operator = ops.getOperator()
         scdict = None
-        if ops.sourceColumns != None:
+        if ops.sourceColumns is not None:
             scdict = [{"name": sc.getName(), "type": sc.getType()} for sc in ops.sourceColumns]
         tcdict = None
-        if ops.targetColumns != None:
+        if ops.targetColumns is not None:
             tcdict = [{"name": tc.getName(), "type": tc.getType()} for tc in ops.targetColumns]
         operator.processTrainingSet(data, scdict, tcdict)
         newcolumn = operator.generateColumn(data, scdict, tcdict)
-        newcolumndata = newcolumn["data"]
+        newcolumndata = newcolumn["data"].fillna(0)
 
         if needcompute == True:
             newcolumndata = newcolumndata.compute()
         if ops.getType() == outputType.Discrete:
-            lensofvalues = len(newcolumn["data"].value_counts().compute())
-            columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns,operator, ops.getName(), False, ops.getType(), lensofvalues)
+            lensofvalues = ops.getNumofBins()
+            columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns, operator, ops.getName(), False, ops.getType(), lensofvalues)
         else:
             columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns, operator, ops.getName(), False, ops.getType())
-        return [newcolumn['name'], newcolumndata, columninfo]
+        return [ops.getName(), newcolumndata, columninfo]
 
 
-    def GenerateAddColumnToData(self,datadict,operators):
+    def GenerateAddColumnToData(self, datadict, operators):
         '''
         :param datadict:{"data":data,"Info":[ColumnInfo]}
         :param operators: [Operators]
         :return: Null
         '''
-        osnums = len(operators)
-        num = 1
-        for os in operators:
-            print("this is ", num, " / ", osnums, " and time is ", datetime.datetime.now())
-            num += 1
-            newcolumn = self.generateColumn(datadict["data"], os)
+        lock = threading.Lock()
+        def myfunc(ops, datadict):
+            newcolumn = self.generateColumn(datadict["data"], ops)
+            lock.acquire()
             self.addColumn(datadict, newcolumn)
+            lock.release()
+
+        threadnums = theproperty.thread
+        if threadnums == 1:
+            osnums = len(operators)
+            num = 1
+            for ops in operators:
+                if num % 100 == 0:
+                    print("this is ", num, " / ", osnums, " and time is ", datetime.datetime.now())
+                num += 1
+                newcolumn = self.generateColumn(datadict["data"], ops)
+                self.addColumn(datadict, newcolumn)
+        else:
+            pool = ThreadPoolExecutor(max_workers=threadnums)
+            maxops = len(operators)
+            iterops = 0
+            iterthread = 0
+            threadlist = []
+            for _ in range(min(threadnums, maxops)):
+                threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
+                iterops += 1
+            while iterops < maxops:
+                for _ in range(threadnums):
+                    if iterops >= maxops:
+                        break
+                    for _ in as_completed([threadlist[iterthread]]):
+                        threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
+                        iterops += 1
+                    iterthread += 1
+                    if iterthread % 100 == 0:
+                        logger.Info("this is " + str(iterthread) + " / " + str(maxops) + " and time is " + str(datetime.datetime.now()))
+            while iterthread < maxops:
+                for _ in as_completed([threadlist[iterthread]]):
+                    iterthread += 1
         logger.Info("GenerateAddColumnToData complete")
 
     def OtherOperator(self, data, operatorlist):
@@ -210,18 +244,19 @@ class OperatorManager:
         return theoperators
 
     def reCalcFEvaluationScores(self, datadict, operators, fevaluation):
-        if fevaluation.needToRecalcScore() == False:
+        if fevaluation.needToRecalcScore() is False:
             return
         else:
-            self.calculateFsocre(datadict, fevaluation,operators)
+            self.calculateFsocre(datadict, fevaluation, operators)
 
     def calculateFsocre(self, datadict, fevaluation, operators: list[Operators]):
         numOfThread = theproperty.thread
         count = 0
+
         def myfunction(ops):
             datacopy = copy.deepcopy(datadict)
             newcolumn = self.generateColumn(datacopy["data"], ops)
-            if newcolumn[1] == None or fevaluation == None:
+            if newcolumn[1] is None or fevaluation is None:
                 logger.Error("generate column or fevaluation error!")
             newfevaluation = copy.deepcopy(fevaluation)
             templist = [newcolumn]
@@ -234,9 +269,9 @@ class OperatorManager:
                 datacopy = copy.deepcopy(datadict)
                 count += 1
                 if count % 1000 == 0:
-                    logger.Info("analyzed ", count, " attributes")
+                    logger.Info("analyzed " + str(count) + " attributes")
                 newcolumn = self.generateColumn(datacopy["data"], ops)
-                if newcolumn[1] == None or fevaluation == None:
+                if newcolumn[1] is None or fevaluation is None:
                     logger.Error("generate column or fevaluation error!")
                 newfevaluation = copy.deepcopy(fevaluation)
 
@@ -246,5 +281,5 @@ class OperatorManager:
                 fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
                 ops.setFScore(fsocre)
         else:
-            parallel.ParallelForEachShare(myfunction, [[ops] for ops in operators])
+            parallel.ParallelForEachShare(myfunction, [ops for ops in operators])
 

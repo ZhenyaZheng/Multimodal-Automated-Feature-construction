@@ -1,4 +1,6 @@
+import datetime
 import os.path
+import copy
 from shutil import copyfile
 import numpy as np
 import pandas as pd
@@ -9,7 +11,8 @@ import dask.dataframe
 from Evaluation.FEvaluation.DatasetAttributes import DatasetAttributes
 from Evaluation.FEvaluation.AttributeInfo import AttributeInfo
 from Evaluation.WEvaluation.WEvaluation import WEvaluation
-from utils import *
+from Serialize import serialize, deserialize
+from MAFC_Operator.OperatorManager import OperatorManager
 from dask_ml.wrappers import ParallelPostFit
 from MAFC_Operator.operator_base import outputType
 from logger.logger import logger
@@ -20,8 +23,9 @@ class MLAttributeManager:
         pass
 
     def getBackgroundClassificationModel(self, datadict):
-        backgroundFilePath = theproperty.backmodelpath + datadict["name"].name + "_model_classifier_obj"
+        backgroundFilePath = theproperty.backmodelpath + datadict["data"].name + "_model_classifier_obj"
         if os.path.isfile(backgroundFilePath):
+            logger.Info(datadict["data"].name + " model has exist")
             model = deserialize(backgroundFilePath)
             return model
         else:
@@ -29,7 +33,7 @@ class MLAttributeManager:
             if os.path.isdir(datasetfilepath):
                 addhead = True
                 for fp in os.listdir(datasetfilepath):
-                    if os.path.isfile(datasetfilepath + fp) and datadict["name"] not in datasetfilepath:
+                    if os.path.isfile(datasetfilepath + fp) and datadict["data"].name not in datasetfilepath:
                         self.addFiletoTargetfile(backgroundFilePath, datasetfilepath + fp, addhead)
                         addhead = False
                     else:
@@ -82,12 +86,12 @@ class MLAttributeManager:
 
         dataattsvalues = self.generateTrainsetAtts(datadict)
         datainstances = self.generateValuesTabular(dataattsvalues)
-        pd.DataFrame.to_csv(datainstances, filepath)
+        datainstances.to_csv(filepath, index=False)
         return datainstances
 
     def generateValuesTabularFromFE(self, candidateAttributes):
         tempattlist = [candidateAttributes]
-        return self.getDatasetInstances(tempattlist)
+        return self.generateValuesTabular(tempattlist)
 
     def generateTrainsetAtts(self, datadict):
         '''
@@ -119,39 +123,13 @@ class MLAttributeManager:
             index = 1
 
             def myfunction(ops):
-
-                datacopy = copy.deepcopy(datadict)
-                candidateatt = oms.generateColumn(datacopy["data"], ops, False)
-                obas = OperatorBasedAttributes()
-                candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
-                oms.addColumn(datacopy, candidateatt)
-                evaluationresult = evaluator.runClassifier(classifier, datacopy)
-                auc = evaluator.calculateAUC(evaluationresult)
-                deltaAUC = auc - originalAUC
-                if deltaAUC > 0.01:
-                    classatt = AttributeInfo("classattribute", outputType.Discrete, 1, 2)
-                    logger.Info("find positive match")
-                else:
-                    classatt = AttributeInfo("classattribute", outputType.Discrete, 0, 2)
-
-                for datainfos in datasetatts.values():
-                    candidateattsdict[len(candidateattsdict)] = datainfos
-                candidateattsdict[len(candidateattsdict)] = classatt
-                candidateattslist.append(candidateattsdict)
-
-
-            if numofthread > 1:
-                parallel.palallelForEach(myfunction, [[oop] for oop in otheroperators])
-            else:
-                for ops in otheroperators:
-                    #if index > 20:break
-                    if index % 100 == 0:
-                        logger.Info("have finish " + str(index) + " operators")
+                try:
                     datacopy = copy.deepcopy(datadict)
                     candidateatt = oms.generateColumn(datacopy["data"], ops, False)
                     obas = OperatorBasedAttributes()
-                    candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
                     oms.addColumn(datacopy, candidateatt)
+                    candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
+
                     evaluationresult = evaluator.runClassifier(classifier, datacopy)
                     auc = evaluator.calculateAUC(evaluationresult)
                     deltaAUC = auc - originalAUC
@@ -165,7 +143,42 @@ class MLAttributeManager:
                         candidateattsdict[len(candidateattsdict)] = datainfos
                     candidateattsdict[len(candidateattsdict)] = classatt
                     candidateattslist.append(candidateattsdict)
-                    index += 1
+                except Exception as ex:
+                    logger.Error(f"generateTrainsetAtts", ex)
+
+            if numofthread > 1:
+                parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
+            else:
+                for ops in otheroperators:
+                    #if index > 20:break
+                    if index % 100 == 0:
+                        logger.Info("have finish " + str(index) + " operators, and time is " + str(datetime.datetime.now()))
+                    if index > 800:
+                        break
+                    try:
+                        datacopy = copy.deepcopy(datadict)
+                        candidateatt = oms.generateColumn(datacopy["data"], ops, False)
+                        obas = OperatorBasedAttributes()
+                        oms.addColumn(datacopy, candidateatt)
+                        candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
+
+                        evaluationresult = evaluator.runClassifier(classifier, datacopy)
+                        auc = evaluator.calculateAUC(evaluationresult)
+                        deltaAUC = auc - originalAUC
+                        if deltaAUC > 0.01:
+                            classatt = AttributeInfo("classattribute", outputType.Discrete, 1, 2)
+                            logger.Info("find positive match")
+                        else:
+                            classatt = AttributeInfo("classattribute", outputType.Discrete, 0, 2)
+
+                        for datainfos in datasetatts.values():
+                            candidateattsdict[len(candidateattsdict)] = datainfos
+                        candidateattsdict[len(candidateattsdict)] = classatt
+                        candidateattslist.append(candidateattsdict)
+                        index += 1
+                    except Exception as ex:
+                        logger.Error(f"generateTrainsetAtts", ex)
+                        continue
         return candidateattslist
 
     def generateValuesTabular(self, dataattsvalues):

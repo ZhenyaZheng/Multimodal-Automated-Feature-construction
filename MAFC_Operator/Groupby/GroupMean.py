@@ -15,19 +15,32 @@ class GroupMean(Groupby):
     def getName(self) -> str:
         return "GroupMean"
 
-    def generateColumn(self,dataset, sourceColumns, targetColumns):
-        oper = self.mapoper["mean"]
+    def processTrainingSet(self, dataset, sourceColumns: list, targetColumns: list):
+        sname = []
+        for sc in sourceColumns:
+            sname.append(sc['name'])
+        tname = targetColumns[0]['name']
+        columndata = dataset.groupby(sname)[tname].agg("mean")
+        thedata = columndata.compute()
+        value = [i for i in thedata.values]
+        key = [i for i in thedata.index]
+        if len(value) != len(key):
+            logger.Error("GroupBy Process Error!")
+        self.data = {}
+        for i in range(0, len(value)):
+            self.data[key[i]] = value[i]
 
-        def getmean(df, sourceColumns, thedatadict):
+    def generateColumn(self,dataset, sourceColumns, targetColumns):
+
+        def getmean(df, sourceColumns, datadict):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
             key = tuple(data.values)
-            if thedatadict.get(key) is None:
-                logger.Error("Groupby.data is not init")
-            return thedatadict[key][oper]
+            if datadict.get(key) is None:
+                logger.Error("self.data is not init")
+            return datadict[key]
 
-        keyname = self.getKeyname(sourceColumns, targetColumns)
-        columndata = dataset.apply(getmean, sourceColumns=sourceColumns, thedatadict=self.getData(keyname), meta=('getmean', 'f8'), axis=1)
+        columndata = dataset.apply(getmean, sourceColumns=sourceColumns, datadict=self.data, meta=('getmean', 'float32'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns,targetColumns) + ")"
         newcolumn = {"name":name,"data":columndata}
         return newcolumn

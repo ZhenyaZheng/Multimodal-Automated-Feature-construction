@@ -6,11 +6,13 @@ from MAFC_Operator import ColumnInfo
 from MAFC_Operator.Unary import Discretizer
 from logger.logger import logger
 from properties.properties import theproperty
+
+
 class StatisticOperation:
     def __init__(self):
         pass
 
-    def _calculatePairedTTestValues(self, dataset, list1:list[ColumnInfo], list2:list[ColumnInfo]):
+    def _calculatePairedTTestValues(self, dataset, list1: list[ColumnInfo], list2: list[ColumnInfo]):
         tTestValues = []
         for ci1 in list1:
             if ci1.getType() != outputType.Numeric:
@@ -20,17 +22,17 @@ class StatisticOperation:
                     logger.Error("Unable to process non-numeric columns - list 2")
                 data1 = dataset[ci1.getName()].values.compute()
                 data2 = dataset[ci2.getName()].values.compute()
-                testValue = abs(stats.ttest_rel(data1,data2))
+                testValue = abs(stats.ttest_rel(data1, data2))
                 if testValue != None:
                     tTestValues.append(testValue)
         return tTestValues
 
-    def calculatePairedTTestValues(self, dataset, list1:list[ColumnInfo], columnInfo:ColumnInfo):
+    def calculatePairedTTestValues(self, dataset, list1: list[ColumnInfo], columnInfo: ColumnInfo):
         templist = []
         templist += [columnInfo]
-        return self._calculatePairedTTestValues(dataset,list1,templist)
+        return self._calculatePairedTTestValues(dataset, list1, templist)
 
-    def _calculateChiSquareTestValues(self, dataset, list1:list[ColumnInfo], list2:list[ColumnInfo]):
+    def _calculateChiSquareTestValues(self, dataset, list1: list[ColumnInfo], list2: list[ColumnInfo]):
         bins = theproperty.DiscretizerBinsNumber
         dizr = Discretizer(bins)
         chiSquareValues = []
@@ -55,10 +57,12 @@ class StatisticOperation:
                     tempcolumn2 = ci2
                     datalist2 = list(dataset[tempcolumn2.getName()].values.compute())
 
-                templist = self.generateDiscreteAttributesCategoryIntersection(datalist1, datalist2, tempcolumn1.getNumsOfUnique(), tempcolumn2.getNumsOfUnique())
+                templist = self.generateDiscreteAttributesCategoryIntersection(datalist1, datalist2,
+                                                                               tempcolumn1.getNumsOfUnique(),
+                                                                               tempcolumn2.getNumsOfUnique())
 
                 chiSquareTestVal = self.chisquare(templist)
-                if chiSquareTestVal != None :
+                if chiSquareTestVal != None:
                     chiSquareValues.append(chiSquareTestVal)
         return chiSquareValues
 
@@ -68,31 +72,33 @@ class StatisticOperation:
             dizr = Discretizer(bins)
         tempcolumnlist = []
         tempcolumnlist.append(columninfo)
-        sclist = [{'name':tl.getName(),'type':tl.getType()} for tl in tempcolumnlist]
+        sclist = [{'name': tl.getName(), 'type': tl.getType()} for tl in tempcolumnlist]
         dizr.processTrainingSet(dataset, sclist, None)
         datadict = dizr.generateColumn(dataset, sclist, None)
-        #datas = datadict['data'].compute()
+        # datas = datadict['data'].compute()
 
         thecolumn = ColumnInfo([columninfo], None, dizr, dizr.getName(), False, dizr.getType(), dizr.getNumofBins())
         return thecolumn, datadict['data']
 
-    def calculateChiSquareTestValues(self, dataset, list1:list[ColumnInfo], columnInfo:ColumnInfo):
+    def calculateChiSquareTestValues(self, dataset, list1: list[ColumnInfo], columnInfo: ColumnInfo):
         templist = []
         templist += [columnInfo]
         return self._calculateChiSquareTestValues(dataset, list1, templist)
 
-    def generateDiscreteAttributesCategoryIntersection(self, data, col1:list, col2:list):
+    def generateDiscreteAttributesCategoryIntersection(self, data, col1: list, col2: list, n: int = theproperty.DiscretizerBinsNumber, m: int = theproperty.DiscretizerBinsNumber):
         newcol1 = col1
         newcol2 = col2
         if type(col1) != list:
+            n = col1.getNumsOfUnique()
             newcol1 = data[col1.getName()].compute().values
         if type(col2) != list:
+            m = col2.getNumsOfUnique()
             newcol2 = data[col2.getName()].compute().values
         if len(newcol1) != len(newcol2):
             return None
-        n = len(newcol1)
-        list1 = np.zeros((n, n), "int32")
-        for i in range(0, n):
+
+        list1 = np.zeros((n, m), "int32")
+        for i in range(0, len(newcol1)):
             list1[newcol1[i]][newcol2[i]] += 1
         return list1
 

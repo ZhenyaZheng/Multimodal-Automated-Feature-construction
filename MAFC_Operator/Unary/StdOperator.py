@@ -29,7 +29,7 @@ class StdOperator(Unary):
             return {"name":name,"data":None}
         def getstd(data, meanval, stdval):
             return (data - meanval) / stdval
-        columndata = dataset[columnname].apply(getstd, meanval=self.meanval, stdval=self.stdval, meta=('getstd','i8'))
+        columndata = dataset[columnname].apply(getstd, meanval=self.meanval, stdval=self.stdval, meta=('getstd','float64'))
         newcolumn = {"name": name, "data": columndata}
         return newcolumn
 

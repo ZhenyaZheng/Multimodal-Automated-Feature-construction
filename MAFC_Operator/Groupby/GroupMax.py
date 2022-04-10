@@ -5,7 +5,7 @@ from logger.logger import logger
 
 class GroupMax(Groupby):
     def __init__(self):
-        super(GroupMax,self).__init__()
+        super(GroupMax, self).__init__()
 
     def requiredInputType(self) -> outputType:
         return outputType.Discrete
@@ -16,19 +16,32 @@ class GroupMax(Groupby):
     def getName(self) -> str:
         return "GroupMax"
 
-    def generateColumn(self, dataset, sourceColumns, targetColumns):
-        oper = self.mapoper["max"]
+    def processTrainingSet(self, dataset, sourceColumns: list, targetColumns: list):
+        sname = []
+        for sc in sourceColumns:
+            sname.append(sc['name'])
+        tname = targetColumns[0]['name']
+        columndata = dataset.groupby(sname)[tname].agg("max")
+        thedata = columndata.compute()
+        value = [i for i in thedata.values]
+        key = [i for i in thedata.index]
+        if len(value) != len(key):
+            logger.Error("GroupBy Process Error!")
+        self.data = {}
+        for i in range(0, len(value)):
+            self.data[key[i]] = value[i]
 
-        def getmax(df, sourceColumns, thedatadict):
+    def generateColumn(self, dataset, sourceColumns, targetColumns):
+
+        def getmax(df, sourceColumns, datadict):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
             key = tuple(data.values)
-            if thedatadict.get(key) is None:
-                logger.Error("Groupby.data is not init")
-            return thedatadict[key][oper]
+            if datadict.get(key) is None:
+                logger.Error("self.data is not init")
+            return datadict[key]
 
-        keyname = self.getKeyname(sourceColumns, targetColumns)
-        columndata = dataset.apply(getmax, sourceColumns=sourceColumns, thedatadict=self.getData(keyname), meta=('getmax', 'f8'), axis=1)
+        columndata = dataset.apply(getmax, sourceColumns=sourceColumns, datadict=self.data, meta=('getmax', 'float32'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

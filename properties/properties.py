@@ -13,8 +13,8 @@ class properties:
         :param
 
         '''
-        self.unaryoperator = ['DayofWeek','Discretizer','HourofDay','IsWeekend','StdOperator']
-        self.otheroperator = ['AddOperator','SubOperator','MultiOperator','DivisOperator','GroupMax','GroupMean','GroupMin','GroupStd','GroupCount']
+        self.unaryoperator = ['DayofWeek', 'Discretizer', 'HourofDay', 'IsWeekend', 'StdOperator']
+        self.otheroperator = ['AddOperator', 'SubOperator', 'MultiOperator', 'DivisOperator', 'GroupMax', 'GroupMean', 'GroupMin', 'GroupStd', 'GroupCount']
         self.DiscretizerBinsNumber = 10 #将实数离散化后的类数
         self.maxcombination = 2
         self.classifier = 'RandomForest'
@@ -30,4 +30,7 @@ class properties:
         self.targetindex = -1
         self.image_path = None
         self.resultfilepath = "data/result/"
+        self.targetmutil = False
+        self.targetclasses = 2
+        self.finalchosenopspath = "data/model/"
 theproperty = properties()

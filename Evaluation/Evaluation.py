@@ -39,7 +39,7 @@ class Evaluation:
         if classifiername == "RandomForest":
             model = RandomForestClassifier()
         elif classifiername == "DicisionTree":
-            model =DecisionTreeClassifier()
+            model = DecisionTreeClassifier()
         elif classifiername == "SVM":
             model = SVC()
         else:
