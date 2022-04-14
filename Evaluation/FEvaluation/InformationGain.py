@@ -13,7 +13,7 @@ class InformationGainFilterEvaluator(FEvaluation):
         self.valuesPerKey = {}
 
     def produceScore(self, analyzedDatasets, currentScore, oa, candidateAttributes):
-        if candidateAttributes != None:
+        if candidateAttributes is not None:
             #留坑
             analyzedDatasets["data"][candidateAttributes[0]] = candidateAttributes[1]
 
@@ -29,11 +29,11 @@ class InformationGainFilterEvaluator(FEvaluation):
                 indexlist = []
                 indexlist.append(val[index])
                 indexkey = tuple(indexlist)
-                if self.valuesPerKey.get(indexkey) == None:
+                if self.valuesPerKey.get(indexkey) is None:
                     numofunique = analyzedDatasets["targetInfo"].getNumsOfUnique()
                     if numofunique is None:
-                        logger.Error(analyzedDatasets["targetInfo"].getName(), "Discrete Column is not exist numsofunique")
-                    self.valuesPerKey[indexkey] = list(np.zeros(numofunique))
+                        logger.Error(analyzedDatasets["targetInfo"].getName() + "Discrete Column is not exist numsofunique")
+                    self.valuesPerKey[indexkey] = list(np.zeros(numofunique, dtype="int32"))
                 self.valuesPerKey[indexkey][value] += 1
 
         return self.calculateIG(X_train)

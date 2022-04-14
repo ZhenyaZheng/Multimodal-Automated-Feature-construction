@@ -15,6 +15,40 @@ class OperatorBasedAttributes:
     def __init__(self):
         self.statisticoperation = StatisticOperation()
 
+        self.numsOfSources: float = 0.0
+        self.numOfNumericSources: float = 0.0
+        self.numOfDiscreteSources: float = 0.0
+        self.numOfDateSources: float = 0.0
+        self.operatorTypeIdentifier: int = 0
+
+        self.isOutputDiscrete: int = 0
+        self.discreteInuse: int = 0
+        self.normalizerInUse: int = 0
+        self.numOfDiscreteValues: float = 0.0
+        self.maxNumOfDiscreteSourceAttribtueValues: float = 0.0
+
+        self.minNumOfDiscreteSourceAttribtueValues: float = 0.0
+        self.avgNumOfDiscreteSourceAttribtueValues: float = 0.0
+        self.stdNumOfDiscreteSourceAttribtueValues: float = 0.0
+        self.maxValueOfNumericTargetAttribute: float = 0.0
+        self.minValueOfNumericTargetAttribute: float = 0.0
+
+        self.avgValueOfNumericTargetAttribute: float = 0.0
+        self.stdValueOfNumericTargetAttribute: float = 0.0
+        self.chiSquareTestValueForSourceAttributes: float = 0.0
+        self.pairedTTestValueForSourceAndTargetAttirbutes: float = 0.0
+        self.maxChiSquareTsetForSourceAndTargetAttributes: float = 0.0
+
+        self.minChiSquareTsetForSourceAndTargetAttributes: float = 0.0
+        self.avgChiSquareTsetForSourceAndTargetAttributes: float = 0.0
+        self.stdChiSquareTsetForSourceAndTargetAttributes: float = 0.0
+        self.maxChiSquareTestvalueForSourceDatasetAttributes: float = 0.0
+        self.minChiSquareTestvalueForSourceDatasetAttributes: float = 0.0
+
+        self.avgChiSquareTestvalueForSourceDatasetAttributes: float = 0.0
+        self.stdChiSquareTestvalueForSourceDatasetAttributes: float = 0.0
+        self.IGScore: float = 0.0
+
     def getOperatorsBasedAttributes(self, datadict, oa, evaluationatt):
         '''
         为所生成属性的“父级”生成元特征，这些元特征不需要计算要计算的生成属性的值
@@ -28,7 +62,7 @@ class OperatorBasedAttributes:
             tempList.append(evaluationatt)
             igfe = InformationGainFilterEvaluator()
             igfe.initFEvaluation(tempList)
-            self.IGScore = igfe.produceScore(datadict, None, None, None)
+            #self.IGScore = igfe.produceScore(datadict, None, None, None)
 
             self.ProcessOperators(oa)
 
@@ -36,11 +70,12 @@ class OperatorBasedAttributes:
 
             self.performStatisticalTestsOnSourceAndTargetAttributes(datadict['data'], oa)
 
-            self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict, oa)
+            #self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict, oa)
 
         except Exception as ex:
             logger.Error(f'Failed in func "getOperatorsBasedAttributes" with exception: {ex}')
         finally:
+
             return self.generateInstanceAttributesMap()
 
     def ProcessOperators(self, oa: Operators):
@@ -50,15 +85,10 @@ class OperatorBasedAttributes:
         :param oa:
         :return:
         '''
-        if oa.sourceColumns != None:
+        if oa.sourceColumns is not None:
             self.numsOfSources = len(oa.sourceColumns)
-        else:
-            self.numsOfSources = 0
 
-        self.numOfNumericSources = 0
-        self.numOfDiscreteSources = 0
-        self.numOfDateSources = 0
-        if oa.sourceColumns != None:
+        if oa.sourceColumns is not None:
             for ci in oa.sourceColumns:
                 if ci.getType() == outputType.Numeric:
                     self.numOfNumericSources += 1
@@ -67,8 +97,8 @@ class OperatorBasedAttributes:
                 elif ci.getType() == outputType.Date:
                     self.numOfDateSources += 1
         self.operatorTypeIdentifier = self.getOperatorTypeID(oa.getOperator().getType())
-        self.isOutputDiscrete = 0
-        if oa.secondoperators != None:
+
+        if oa.secondoperators is not None:
             if oa.secondoperators.getOutputType() == outputType.Discrete:
                 self.isOutputDiscrete = 1
         else:
@@ -107,48 +137,45 @@ class OperatorBasedAttributes:
         return 0
 
     def getNumOfNewAttributeDiscreteValues(self, oa):
-        if oa.secondoperators != None:
+        if oa.secondoperators is not None:
             return oa.secondoperators.getNumOfBins()
         else:
             if oa.getOperator().getOutputType() != outputType.Discrete:
-                return -1
-            else :
+                return 0.0
+            else:
                 return oa.getOperator().getNumofBins()
 
-    def processSourceAndTargetAttributes(self,dataset: dd.DataFrame, oa: Operators):
+    def processSourceAndTargetAttributes(self, dataset: dd.DataFrame, oa: Operators):
         '''
 
         :param oa:
         :return:
         '''
-        sourceattributelist = []
-        for sourceatts in oa.sourceColumns:
-            if sourceatts.getType() == outputType.Discrete:
-                sourceattributelist.append(sourceatts.getNumsOfUnique())
+        try:
+            sourceattributelist = []
+            for sourceatts in oa.sourceColumns:
+                if sourceatts.getType() == outputType.Discrete:
+                    sourceattributelist.append(sourceatts.getNumsOfUnique())
 
-        self.maxNumOfDiscreteSourceAttribtueValues = 0
-        self.minNumOfDiscreteSourceAttribtueValues = 0
-        self.avgNumOfDiscreteSourceAttribtueValues = 0
-        self.stdNumOfDiscreteSourceAttribtueValues = 0
-        if len(sourceattributelist) != 0:
-            self.maxNumOfDiscreteSourceAttribtueValues = np.max(sourceattributelist)
-            self.minNumOfDiscreteSourceAttribtueValues = np.min(sourceattributelist)
-            self.avgNumOfDiscreteSourceAttribtueValues = np.mean(sourceattributelist)
-            self.stdNumOfDiscreteSourceAttribtueValues = np.std(sourceattributelist)
 
-        self.maxValueOfNumericTargetAttribute = 0
-        self.minValueOfNumericTargetAttribute = 0
-        self.avgValueOfNumericTargetAttribute = 0
-        self.stdValueOfNumericTargetAttribute = 0
+            if len(sourceattributelist) != 0:
+                self.maxNumOfDiscreteSourceAttribtueValues = np.max(sourceattributelist)
+                self.minNumOfDiscreteSourceAttribtueValues = np.min(sourceattributelist)
+                self.avgNumOfDiscreteSourceAttribtueValues = np.mean(sourceattributelist)
+                self.stdNumOfDiscreteSourceAttribtueValues = np.std(sourceattributelist)
 
-        if oa.targetColumns == None or len(oa.targetColumns) == 0 or oa.targetColumns[0].getType() != outputType.Numeric:
-            pass
-        else:
-            columnname = oa.targetColumns[0].getName()
-            self.maxValueOfNumericTargetAttribute = dataset[columnname].max().compute()
-            self.minValueOfNumericTargetAttribute = dataset[columnname].min().compute()
-            self.avgValueOfNumericTargetAttribute = dataset[columnname].mean().compute()
-            self.stdValueOfNumericTargetAttribute = dataset[columnname].std().compute()
+
+
+            if oa.targetColumns is None or len(oa.targetColumns) == 0 or oa.targetColumns[0].getType() != outputType.Numeric:
+                pass
+            else:
+                columnname = oa.targetColumns[0].getName()
+                self.maxValueOfNumericTargetAttribute = dataset[columnname].max().compute()
+                self.minValueOfNumericTargetAttribute = dataset[columnname].min().compute()
+                self.avgValueOfNumericTargetAttribute = dataset[columnname].mean().compute()
+                self.stdValueOfNumericTargetAttribute = dataset[columnname].std().compute()
+        except Exception as ex:
+            logger.Error(f"processSourceAndTargetAttributes error: {ex}")
 
     def performStatisticalTestsOnSourceAndTargetAttributes(self, dataset, oa: Operators):
         '''
@@ -157,7 +184,7 @@ class OperatorBasedAttributes:
         :param oa:
         :return:
         '''
-        self.chiSquareTestValueForSourceAttributes = 0
+
         if len(oa.sourceColumns) == 2:
             if oa.sourceColumns[0].getType() == outputType.Discrete and oa.sourceColumns[1].getType() == outputType.Discrete:
                 templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
@@ -170,16 +197,13 @@ class OperatorBasedAttributes:
                     self.chiSquareTestValueForSourceAttributes = tempval
                 else:
                     self.chiSquareTestValueForSourceAttributes = -1
-        self.pairedTTestValueForSourceAndTargetAttirbutes = 0
+
         if len(oa.sourceColumns) == 1 and oa.sourceColumns[0].getType() == outputType.Numeric and oa.targetColumns is not None and len(oa.targetColumns) == 1:
             templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
             templist2 = list(dataset[oa.targetColumns[0].getName()].values.compute())
             self.pairedTTestValueForSourceAndTargetAttirbutes = stats.ttest_rel(templist1, templist2)
 
-        self.maxChiSquareTsetForSourceAndTargetAttributes = 0
-        self.minChiSquareTsetForSourceAndTargetAttributes = 0
-        self.avgChiSquareTsetForSourceAndTargetAttributes = 0
-        self.stdChiSquareTsetForSourceAndTargetAttributes = 0
+
 
         if len(oa.sourceColumns) == 1 and oa.targetColumns == None:
             pass
@@ -239,12 +263,10 @@ class OperatorBasedAttributes:
                         chisquaretestvalue = self.statisticoperation.chisquare(list1)
                 if chisquaretestvalue is not None:
                     chisquaretestvalues.append(chisquaretestvalue)
-                else:chisquaretestvalues.append(0)
+                else:
+                    chisquaretestvalues.append(0)
 
-        self.maxChiSquareTestvalueForSourceDatasetAttributes = 0
-        self.minChiSquareTestvalueForSourceDatasetAttributes = 0
-        self.avgChiSquareTestvalueForSourceDatasetAttributes = 0
-        self.stdChiSquareTestvalueForSourceDatasetAttributes = 0
+
 
         if len(chisquaretestvalues) > 0:
             self.maxChiSquareTestvalueForSourceDatasetAttributes = np.max(chisquaretestvalues)
@@ -265,9 +287,10 @@ class OperatorBasedAttributes:
                                                     self.numOfDateSources, -1)
         attributes[len(attributes)] = AttributeInfo("isOutputDiscrete", outputType.Discrete,
                                                     self.isOutputDiscrete, 2)
+
+
         attributes[len(attributes)] = AttributeInfo("operatorTypeIdentifier", outputType.Discrete,
                                                     self.operatorTypeIdentifier, 4)
-
         attributes[len(attributes)] = AttributeInfo("discreteInuse", outputType.Discrete,
                                                     self.discreteInuse, 2)
         attributes[len(attributes)] = AttributeInfo("normalizerInUse", outputType.Discrete,
@@ -276,6 +299,8 @@ class OperatorBasedAttributes:
                                                     self.numOfDiscreteValues, -1)
         attributes[len(attributes)] = AttributeInfo("IGScore", outputType.Numeric,
                                                     self.IGScore, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("maxNumOfDiscreteSourceAttribtueValues",
                                                     outputType.Numeric,
                                                     self.maxNumOfDiscreteSourceAttribtueValues, -1)
@@ -291,6 +316,8 @@ class OperatorBasedAttributes:
         attributes[len(attributes)] = AttributeInfo("maxValueOfNumericTargetAttribute",
                                                     outputType.Numeric,
                                                     self.maxValueOfNumericTargetAttribute, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("minValueOfNumericTargetAttribute",
                                                     outputType.Numeric,
                                                     self.minValueOfNumericTargetAttribute, -1)
@@ -306,6 +333,8 @@ class OperatorBasedAttributes:
         attributes[len(attributes)] = AttributeInfo("pairedTTestValueForSourceAndTargetAttirbutes",
                                                     outputType.Numeric,
                                                     self.pairedTTestValueForSourceAndTargetAttirbutes, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("maxChiSquareTsetForSourceAndTargetAttributes",
                                                     outputType.Numeric,
                                                     self.maxChiSquareTsetForSourceAndTargetAttributes, -1)
@@ -321,6 +350,8 @@ class OperatorBasedAttributes:
         attributes[len(attributes)] = AttributeInfo("maxChiSquareTestvalueForSourceDatasetAttributes",
                                                     outputType.Numeric,
                                                     self.maxChiSquareTestvalueForSourceDatasetAttributes, -1)
+
+
         attributes[len(attributes)] = AttributeInfo("minChiSquareTestvalueForSourceDatasetAttributes",
                                                     outputType.Numeric,
                                                     self.minChiSquareTestvalueForSourceDatasetAttributes, -1)

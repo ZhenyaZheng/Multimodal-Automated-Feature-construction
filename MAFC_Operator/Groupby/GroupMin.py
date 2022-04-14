@@ -25,7 +25,8 @@ class GroupMin(Groupby):
         value = [i for i in thedata.values]
         key = [i for i in thedata.index]
         if len(value) != len(key):
-            logger.Error("GroupBy Process Error!")
+            #logger.Info("GroupMin:self.data is not init")
+            return 0
         self.data = {}
         for i in range(0, len(value)):
             self.data[key[i]] = value[i]
@@ -40,7 +41,7 @@ class GroupMin(Groupby):
                 logger.Error("self.data is not init")
             return datadict[key]
 
-        columndata = dataset.apply(getmin, sourceColumns=sourceColumns, datadict=self.data, meta=('getmin', 'float32'), axis=1)
+        columndata = dataset.apply(getmin, sourceColumns=sourceColumns, datadict=self.data, meta=('getmin', 'float'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

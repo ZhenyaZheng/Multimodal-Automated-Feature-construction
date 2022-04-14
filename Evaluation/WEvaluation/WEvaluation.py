@@ -18,37 +18,38 @@ class WEvaluation(Evaluation):
         super(WEvaluation, self).__init__()
 
     def evaluationAsave(self, currentresult: ClassificationResults, iteration=0, addatts:list[Operators]=None, nums=0, newfile=True):
-        sb = ''
-        if newfile:
-            sb += "Iteration,Added_Attributes,LogLoss,AUC,F1Score"
-            sb += ",Chosen_Attributes_FScore,Chosen_Attributes_WScore,Num_Of_Evaluated_Attributes_In_Iteration"
-            sb += "Iteration_Completion_time"
-            sb += os.linesep
-
-        sb += str(iteration) + ","
-        sb += '"['
-        if addatts is not None:
-            for ats in addatts:
-                sb += ats.getName()
-                sb += ","
-        sb += ']",'
-        sb += str(currentresult.getLogLoss()) + ","
-        sb += str(currentresult.getAuc()) + ','
-        sb += str(currentresult.getFMeasureValues()) + ","
-        if addatts is not None:
-            for ats in addatts:
-                sb += ats.getFScore()
-                sb += ","
-            sb += ']","['
-            for ats in addatts:
-                sb += ats.getWScore()
-                sb += ","
-            sb += ']",'
-        sb += str(nums) + ","
-        date = datetime.now()
-        sb += date.__str__()
-
         try:
+            sb = ''
+            if newfile:
+                sb += "Iteration,Added_Attributes,LogLoss,AUC,F1Score"
+                sb += ",Chosen_Attributes_FScore,Chosen_Attributes_WScore,Num_Of_Evaluated_Attributes_In_Iteration"
+                sb += "Iteration_Completion_time"
+                sb += os.linesep
+
+            sb += str(iteration) + ","
+            sb += '"['
+            if addatts is not None:
+                for ats in addatts:
+                    sb += ats.getName()
+                    sb += ","
+            sb += ']",'
+            sb += str(currentresult.getLogLoss()) + ","
+            sb += str(currentresult.getAuc()) + ','
+            sb += str(currentresult.getFMeasureValues()) + ","
+            if addatts is not None:
+                for ats in addatts:
+                    sb += str(ats.getFScore())
+                    sb += ","
+                sb += ']","['
+                for ats in addatts:
+                    sb += str(ats.getWScore())
+                    sb += ","
+                sb += ']",'
+            sb += str(nums) + ","
+            date = datetime.now()
+            sb += date.__str__()
+
+
             filepath = theproperty.resultfilepath + theproperty.datasetname + ".csv"
             if newfile:
                 fw = open(filepath, "w")
@@ -57,7 +58,7 @@ class WEvaluation(Evaluation):
             fw.write(sb + "\n")
             fw.close()
         except Exception as ex:
-            logger.Error("IOException: " , ex)
+            logger.Error("IOException: {ex}", ex)
 
     def ProduceClassifications(self, dataset, classifier):
         classificationresult = self.getClassifications(dataset, classifier)
@@ -86,7 +87,7 @@ class WEvaluation(Evaluation):
             client.close()
             return (y_t, y_p)
         except Exception as ex:
-            logger.Error(f"runclassifier error", ex)
+            logger.Error(f"runclassifier error{ex}", ex)
             return None
 
     def calculateAUC(self, evaluation):
@@ -101,8 +102,8 @@ class WEvaluation(Evaluation):
             else:
                 auc = roc_auc_score(evaluation[0], evaluation[1])
             return auc
-        except Exception as ex:
-            logger.Error(f"calculateAUC error", ex)
+        except ValueError as ex:
+            logger.Error(f"calculateAUC error{ex}", ex)
             return 0
 
     def calculateLoss(self, evaluation):
@@ -116,7 +117,7 @@ class WEvaluation(Evaluation):
             y_pred = one_hot.fit_transform(y_pred)
             return log_loss(y_true, y_pred)
         except Exception as ex:
-            logger.Error(f"calculateLoss error", ex)
+            logger.Error(f"calculateLoss error{ex}")
             return 0
 
 
@@ -126,7 +127,7 @@ class WEvaluation(Evaluation):
         try:
             return f1_score(evaluation[0], evaluation[1], average='macro')
         except Exception as ex:
-            logger.Error(f"calculateFsocre error", ex)
+            logger.Error(f"calculateFsocre error{ex}", ex)
             return 0
 
     def getClassifications(self, dataset, classifier):

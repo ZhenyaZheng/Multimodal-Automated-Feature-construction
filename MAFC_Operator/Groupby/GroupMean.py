@@ -37,10 +37,11 @@ class GroupMean(Groupby):
             data = df[sname]
             key = tuple(data.values)
             if datadict.get(key) is None:
-                logger.Error("self.data is not init")
+                #logger.Info("GroupMean:self.data is not init")
+                return 0
             return datadict[key]
 
-        columndata = dataset.apply(getmean, sourceColumns=sourceColumns, datadict=self.data, meta=('getmean', 'float32'), axis=1)
+        columndata = dataset.apply(getmean, sourceColumns=sourceColumns, datadict=self.data, meta=('getmean', 'float'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns,targetColumns) + ")"
         newcolumn = {"name":name,"data":columndata}
         return newcolumn

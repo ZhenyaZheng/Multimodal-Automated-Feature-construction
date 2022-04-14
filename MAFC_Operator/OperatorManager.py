@@ -23,6 +23,8 @@ class OperatorManager:
         :param candidateatt:(name,data)
         :return:
         '''
+        if candidateatt is None:
+            return
         datadict["data"][candidateatt[0]] = candidateatt[1]
         datadict["Info"].append(candidateatt[2])
 
@@ -138,7 +140,7 @@ class OperatorManager:
         ob = eval(name + "()")
         return ob
 
-    def getOtherOperator(self,name):
+    def getOtherOperator(self, name):
         if "Time" in name:
             names = name.split("_")
             ob = eval(names[0] + "(" + names[1] + ")")
@@ -149,7 +151,7 @@ class OperatorManager:
 
 
 
-    def getOperator(self,oper):
+    def getOperator(self, oper):
         if oper.getType() == operatorType.Unary:
             return self.getUnaryOperator(oper.getName())
         return self.getOtherOperator(oper.getName())
@@ -250,36 +252,47 @@ class OperatorManager:
             self.calculateFsocre(datadict, fevaluation, operators)
 
     def calculateFsocre(self, datadict, fevaluation, operators: list[Operators]):
+
         numOfThread = theproperty.thread
         count = 0
 
         def myfunction(ops):
-            datacopy = copy.deepcopy(datadict)
-            newcolumn = self.generateColumn(datacopy["data"], ops)
-            if newcolumn[1] is None or fevaluation is None:
-                logger.Error("generate column or fevaluation error!")
-            newfevaluation = copy.deepcopy(fevaluation)
-            templist = [newcolumn]
-            newfevaluation.initFEvaluation(templist)
-            fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
-            ops.setFScore(fsocre)
 
-        if numOfThread == 1:
-            for ops in operators:
+            try:
                 datacopy = copy.deepcopy(datadict)
-                count += 1
-                if count % 1000 == 0:
-                    logger.Info("analyzed " + str(count) + " attributes")
                 newcolumn = self.generateColumn(datacopy["data"], ops)
                 if newcolumn[1] is None or fevaluation is None:
-                    logger.Error("generate column or fevaluation error!")
+                    logger.Info("generate column or fevaluation error!")
                 newfevaluation = copy.deepcopy(fevaluation)
-
                 templist = [newcolumn]
-
                 newfevaluation.initFEvaluation(templist)
                 fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
                 ops.setFScore(fsocre)
+            except Exception as ex:
+                logger.Error(f"calculateFsocre error!{ex}")
+                ops.setFScore(0.0)
+
+        if numOfThread == 1:
+            for ops in operators:
+                try:
+                    if count >= 300:
+                        break
+                    count += 1
+                    if count % 100 == 0:
+                        logger.Info("analyzed " + str(count) + " attributes, and time is " + str(datetime.datetime.now()))
+                    newcolumn = self.generateColumn(datadict["data"], ops)
+                    if newcolumn[1] is None or fevaluation is None:
+                        logger.Info("generate column or fevaluation error!")
+                    datacopy = copy.deepcopy(datadict)
+                    newfevaluation = copy.deepcopy(fevaluation)
+                    self.addColumn(datacopy, newcolumn)
+                    #templist = [newcolumn]
+                    #newfevaluation.initFEvaluation(templist)
+                    fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
+                    ops.setFScore(fsocre)
+                except Exception as ex:
+                    logger.Error(f"calculateFsocre error!{ex}")
+                    ops.setFScore(0.0)
         else:
             parallel.ParallelForEachShare(myfunction, [ops for ops in operators])
 

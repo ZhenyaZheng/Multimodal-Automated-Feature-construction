@@ -68,7 +68,7 @@ class MLAttributeManager:
                     a = sourfile.readline()
                     tarfile.writelines("\n")
                     while a != "":
-                        print(a)
+                        #print(a)
                         tarfile.writelines(a)
                         a = sourfile.readline()
         else:
@@ -98,63 +98,32 @@ class MLAttributeManager:
         :param datadict:
         :return:[{}]
         '''
-        candidateattslist = []
-        classifiers = theproperty.classifiersforMLAttributes
-        dbas = DatasetAttributes()
-        evaluator = WEvaluation()
-        for classifier in classifiers:
-            evaluationresult = evaluator.runClassifier(classifier, datadict)
-            originalAUC = evaluator.calculateAUC(evaluationresult)
+        try:
+            candidateattslist = []
+            classifiers = theproperty.classifiersforMLAttributes
+            dbas = DatasetAttributes()
+            evaluator = WEvaluation()
+            for classifier in classifiers:
+                evaluationresult = evaluator.runClassifier(classifier, datadict)
+                originalAUC = evaluator.calculateAUC(evaluationresult)
 
-            datasetatts = dbas.getDatasetBasedFeature(datadict, classifier)
+                datasetatts = dbas.getDatasetBasedFeature(datadict, classifier)
 
-            classifieratt = AttributeInfo("Classifier", outputType.Discrete, self.getClassifierIndex(classifier), 3)
+                classifieratt = AttributeInfo("Classifier", outputType.Discrete, self.getClassifierIndex(classifier), 3)
 
-            datasetatts[len(datasetatts)] = classifieratt
+                datasetatts[len(datasetatts)] = classifieratt
 
-            oms = OperatorManager()
-            unaryoperlist = theproperty.unaryoperator
-            unaryoperators = oms.UnaryOperator(datadict, unaryoperlist)
+                oms = OperatorManager()
+                unaryoperlist = theproperty.unaryoperator
+                unaryoperators = oms.UnaryOperator(datadict, unaryoperlist)
 
-            otheroperlist = theproperty.otheroperator
-            otheroperators = oms.OtherOperator(datadict, otheroperlist)
-            otheroperators = unaryoperators + otheroperators
-            numofthread = theproperty.thread
-            index = 1
+                otheroperlist = theproperty.otheroperator
+                otheroperators = oms.OtherOperator(datadict, otheroperlist)
+                otheroperators = unaryoperators + otheroperators
+                numofthread = theproperty.thread
+                index = 1
 
-            def myfunction(ops):
-                try:
-                    datacopy = copy.deepcopy(datadict)
-                    candidateatt = oms.generateColumn(datacopy["data"], ops, False)
-                    obas = OperatorBasedAttributes()
-                    oms.addColumn(datacopy, candidateatt)
-                    candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
-
-                    evaluationresult = evaluator.runClassifier(classifier, datacopy)
-                    auc = evaluator.calculateAUC(evaluationresult)
-                    deltaAUC = auc - originalAUC
-                    if deltaAUC > 0.01:
-                        classatt = AttributeInfo("classattribute", outputType.Discrete, 1, 2)
-                        logger.Info("find positive match")
-                    else:
-                        classatt = AttributeInfo("classattribute", outputType.Discrete, 0, 2)
-
-                    for datainfos in datasetatts.values():
-                        candidateattsdict[len(candidateattsdict)] = datainfos
-                    candidateattsdict[len(candidateattsdict)] = classatt
-                    candidateattslist.append(candidateattsdict)
-                except Exception as ex:
-                    logger.Error(f"generateTrainsetAtts", ex)
-
-            if numofthread > 1:
-                parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
-            else:
-                for ops in otheroperators:
-                    #if index > 20:break
-                    if index % 100 == 0:
-                        logger.Info("have finish " + str(index) + " operators, and time is " + str(datetime.datetime.now()))
-                    if index > 800:
-                        break
+                def myfunction(ops):
                     try:
                         datacopy = copy.deepcopy(datadict)
                         candidateatt = oms.generateColumn(datacopy["data"], ops, False)
@@ -175,11 +144,47 @@ class MLAttributeManager:
                             candidateattsdict[len(candidateattsdict)] = datainfos
                         candidateattsdict[len(candidateattsdict)] = classatt
                         candidateattslist.append(candidateattsdict)
-                        index += 1
                     except Exception as ex:
                         logger.Error(f"generateTrainsetAtts", ex)
-                        continue
-        return candidateattslist
+
+                if numofthread > 1:
+                    parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
+                else:
+                    for ops in otheroperators:
+                        #if index > 20:break
+                        if index % 100 == 0:
+                            logger.Info("have finish " + str(index) + " operators, and time is " + str(datetime.datetime.now()))
+                        if index > 800:
+                            break
+                        try:
+                            datacopy = copy.deepcopy(datadict)
+                            candidateatt = oms.generateColumn(datacopy["data"], ops, False)
+                            obas = OperatorBasedAttributes()
+                            oms.addColumn(datacopy, candidateatt)
+                            candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
+
+                            evaluationresult = evaluator.runClassifier(classifier, datacopy)
+                            auc = evaluator.calculateAUC(evaluationresult)
+                            deltaAUC = auc - originalAUC
+                            if deltaAUC > 0.01:
+                                classatt = AttributeInfo("classattribute", outputType.Discrete, 1, 2)
+                                logger.Info("find positive match")
+                            else:
+                                classatt = AttributeInfo("classattribute", outputType.Discrete, 0, 2)
+
+                            for datainfos in datasetatts.values():
+                                candidateattsdict[len(candidateattsdict)] = datainfos
+                            candidateattsdict[len(candidateattsdict)] = classatt
+                            candidateattslist.append(candidateattsdict)
+                            index += 1
+                        except Exception as ex:
+                            logger.Error(f"generateTrainsetAtts", ex)
+                            continue
+        except  Exception as ex:
+            logger.Error(f'Failed in func "generateTrainsetAtts" with exception: {ex}')
+            serialize(theproperty.resultfilepath + "candidateattslist", candidateattslist)
+        finally:
+            return candidateattslist
 
     def generateValuesTabular(self, dataattsvalues):
         '''
@@ -187,18 +192,24 @@ class MLAttributeManager:
         :param dataattsvalues: [{}]
         :return: pandas.dataframe
         '''
-        attributes = self.generateAtts(dataattsvalues[0], len(dataattsvalues))
-        df = pd.DataFrame()
-        for atts in attributes:
-            df.insert(len(df.columns), atts.name, atts)
-        num = 0
-        for dav in dataattsvalues:#{1:att,2:att}
-            for ats in dav.items():#(1:att)
-                index = ats[0]
-                att = ats[1]
-                df.iloc[:, index][num] = att.getValue()
-            num += 1
-        return df
+        try:
+            attributes = self.generateAtts(dataattsvalues[0], len(dataattsvalues))
+            df = pd.DataFrame()
+            thename = []
+            for atts in attributes:
+                df.insert(len(df.columns), atts.name, atts)
+                thename.append(atts.name)
+            num = 0
+            for dav in dataattsvalues:#{1:att,2:att}
+                for ats in dav.items():#(1:att)
+                    index = ats[0]
+                    att = ats[1]
+                    df.loc[num, thename[index]] = att.getValue()
+                num += 1
+            return df
+        except Exception as ex:
+            logger.Error(f"generateValuesTabular error: {ex}")
+            return None
 
 
     def generateAtts(self, dataattsvalue, sizen: int):
@@ -209,14 +220,16 @@ class MLAttributeManager:
         '''
         attributelist = []
         for attif in dataattsvalue.values():
-
+            datase = [0 for _ in range(sizen)]
             if attif.getType() == outputType.Discrete:
-                type = "int32"
+                type = "int"
+                #datase = [0 for _ in range(sizen)]
             elif attif.getType() == outputType.Numeric:
-                type = "float32"
+                type = "float"
+                datase = [0.0 for _ in range(sizen)]
             else:
                 logger.Error("MLatt is not support except int and float type")
-            datase = np.zeros(sizen, type)
+
             att = pd.core.series.Series(datase, None, type, attif.getName())
             attributelist.append(att)
         return attributelist

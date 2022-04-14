@@ -90,7 +90,7 @@ class DatasetAttributes:
 
         except Exception as ex:
             logger.Error(f'Failed in func "getDatasetBasedFeature" with exception: {ex}')
-            return None
+            #return None
         finally:
             return self.generateDatasetAttributesMap()
 
@@ -101,8 +101,6 @@ class DatasetAttributes:
         :return:
         '''
         self.numOfInstances = len(datadict["data"])
-
-
         self.numOfFeatures = len(datadict["data"].columns)
         self.numOfNumericAttributes = 0
         self.numOfDiscreteAttributes = 0

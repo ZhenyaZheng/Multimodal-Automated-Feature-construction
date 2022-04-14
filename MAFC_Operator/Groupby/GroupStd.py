@@ -37,10 +37,11 @@ class GroupStd(Groupby):
             data = df[sname]
             key = tuple(data.values)
             if datadict.get(key) is None:
-                logger.Error("self.data is not init")
+                #logger.Info("GroupStd:self.data is not init")
+                return 0
             return datadict[key]
 
-        columndata = dataset.apply(getstd, sourceColumns=sourceColumns, datadict=self.data, meta=('getstd', 'float32'), axis=1)
+        columndata = dataset.apply(getstd, sourceColumns=sourceColumns, datadict=self.data, meta=('getstd', 'float'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

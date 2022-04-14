@@ -68,4 +68,7 @@ class Operators:
                 return self.operator.getNumofBins()
         return -1
 
+    def __hash__(self):
+        return hash(self.getName())
+
 

@@ -25,7 +25,7 @@ class FEvaluation(Evaluation):
         for acs in self.analycolumns:
             if acs[2].getType() != outputType.Discrete:
                 discretizer = Discretizer(bins)
-                soucol = [{"name": acs[0], "type": acs[2].getType()}]
+                soucol = [{"name": acs[2].getName(), "type": acs[2].getType()}]
                 discretizer.processTrainingSet(datadict["data"], soucol, None)
                 newcolumn = discretizer.generateColumn(datadict["data"], soucol, None)
                 acs[0] = newcolumn["name"]

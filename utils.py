@@ -4,6 +4,7 @@ from Evaluation.FEvaluation.MLFEvalution import MLFEvaluation
 from Evaluation.WEvaluation.AucWrapperEvaluation import AucWrapperEvaluation
 from MAFC_Operator.ColumnInfo import ColumnInfo
 from MAFC_Operator.operator_base import outputType
+from Serialize import serialize
 from logger.logger import logger
 from text.text_process import process as txprocess
 from image.image_process import process as improcess
@@ -183,16 +184,18 @@ def saveData(image_fc: dd.DataFrame, text_fc: dd.DataFrame):
     :param text_fc: dd.DataFrame
     :return: dd.DataFrame , dd.DataFrame
     '''
+    thetime = getNowTimeStr()
     if image_fc is not None:
-        thetime = str(datetime.datetime.now()).replace(" ","").replace("-","").replace(":","").replace(".","")
-        os.makedirs("data/image/tempimage" + thetime)
-        image_fc.to_csv("data/image/tempimage" + thetime)
-        image_fc = dd.read_csv("data/image/tempimage" + thetime + "/*.part")
+        tempimagedir = theproperty.temppath + "image_" + thetime
+        os.makedirs(tempimagedir)
+        image_fc.to_csv(tempimagedir, index=False)
+        image_fc = dd.read_csv(tempimagedir + "/*.part")
         #imageview = image_fc.compute()
     if text_fc is not None:
-        os.makedirs("data/text/temptext" + thetime)
-        text_fc.to_csv("data/text/temptext" + thetime)
-        text_fc = dd.read_csv("data/text/temptext" + thetime + "/*.part")
+        temptextdir = theproperty.temppath + "text_" + thetime
+        os.makedirs(temptextdir)
+        text_fc.to_csv(temptextdir, index=False)
+        text_fc = dd.read_csv(temptextdir + "/*.part")
         #textview = text_fc.compute()
     return image_fc, text_fc
 
@@ -216,3 +219,13 @@ def generateModelData(dataset: Dataset):
     mlam = MLAttributeManager()
     mlam.getDatasetInstances(datadict)
 
+def getNowTimeStr():
+    thetime = str(datetime.datetime.now()).replace(" ", "").replace("-", "").replace(":", "").replace(".", "")
+    return thetime
+
+def saveDateFrame(dataframe: dd.DataFrame, name: str = "dataset"):
+    serialize(theproperty.temppath + name + getNowTimeStr(), dataframe)
+    newdir = theproperty.temppath + "dataframe" + getNowTimeStr()
+    os.mkdir(newdir)
+    if dataframe is not None:
+        dataframe.to_csv(newdir, index=False)

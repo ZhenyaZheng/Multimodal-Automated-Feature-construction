@@ -25,7 +25,8 @@ class GroupCount(Groupby):
         value = [i for i in thedata.values]
         key = [i for i in thedata.index]
         if len(value) != len(key):
-            logger.Error("GroupBy Process Error!")
+            logger.Info("GroupBy Process Error, len(value) != len(key)!")
+            return
         self.data = {}
         for i in range(0, len(value)):
             self.data[key[i]] = value[i]
@@ -38,10 +39,12 @@ class GroupCount(Groupby):
             data = df[sname]
             key = tuple(data.values)
             if datadict.get(key) is None:
-                logger.Error("self.data is not init")
+                #raise()
+                #logger.Info("GroupCount:self.data is not init")
+                return 0
             return datadict[key]
 
-        columndata = dataset.apply(getcount, sourceColumns=sourceColumns, datadict=self.data, meta=('getcount', 'float32'), axis=1)
+        columndata = dataset.apply(getcount, sourceColumns=sourceColumns, datadict=self.data, meta=('getcount', 'float'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn
