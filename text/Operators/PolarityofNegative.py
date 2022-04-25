@@ -3,6 +3,8 @@ import dask.dataframe as dd
 from text.TextOperator import TextOperator
 from text.lexicon import lexicons_features_vectors
 from text.stanford_nlp import StanfordNLP
+from logger.logger import logger
+from properties.properties import theproperty
 
 
 class PolarityofNegative(TextOperator):
@@ -21,8 +23,13 @@ class PolarityofNegative(TextOperator):
                 return 0
             else:
                 return 1
+        if theproperty.dataframe == "daks":
+            datalist = list(data.iloc[:, -1].compute().values)
+        elif theproperty.dataframe == "pandas":
+            datalist = list(data.iloc[:, -1].values)
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
 
-        datalist = list(data.iloc[:, -1].compute().values)
 
         nlp_helper = StanfordNLP()
         words = []
@@ -33,8 +40,9 @@ class PolarityofNegative(TextOperator):
             pos_tags.append(pos_tag)
         wordvec = lexicons_features_vectors(words, pos_tags)
         newseries = [pol(i) for i in wordvec]
-        theseries = pd.Series(newseries, name=self.getName(), dtype="int32")
-        series = dd.from_pandas(theseries, npartitions=1).reset_index().iloc[:, -1]
+        series = pd.Series(newseries, name=self.getName(), dtype="int32")
+        if theproperty.dataframe == "dask":
+            series = dd.from_pandas(series, npartitions=1).reset_index().iloc[:, -1]
         return series
 
     def getName(self):

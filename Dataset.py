@@ -29,7 +29,7 @@ class Dataset:
                     test.csv
             请注意文件目录最后的/，如果是目录需要以/结尾
         :param mode:数据的读取方式，1代表文件读取，2代表是数据库读取，默认为1
-        :param sql:数据库相关信息{"ip":"","port":"","user":"","password","","database":"","table":{"image_data":"","text_data":"","tabular_data":""}}
+        :param sql:（暂不支持）数据库相关信息{"ip":"","port":"","user":"","password","","database":"","table":{"image_data":"","text_data":"","tabular_data":""}}
         :param name:数据集的名字
         '''
         self.mode = mode
@@ -50,7 +50,13 @@ class Dataset:
         text_path = self.data_path['text_path']
         if text_path is None:
             return None
-        text_data = dd.read_csv(text_path)
+        if theproperty.dataframe == "dask":
+            text_data = dd.read_csv(text_path)
+        elif theproperty.dataframe == "pandas":
+            text_data = pd.read_csv(text_path)
+        else:
+            logger.Info("no " + theproperty.dataframe + " can use!")
+
         return text_data
 
 
@@ -69,12 +75,24 @@ class Dataset:
         theproperty.image_path = imagedata_path
         image_data = None
         if os.path.isfile(match_path):
-            image_data = dd.read_csv(match_path)
+            if theproperty.dataframe == "dask":
+                image_data = dd.read_csv(match_path)
+            elif theproperty.dataframe == "pandas":
+                image_data = pd.read_csv(match_path)
+            else:
+                logger.Info("no " + theproperty.dataframe + " can use!")
+
         else:
             if os.path.isdir(imagedata_path):
                 imagelist = os.listdir(imagedata_path)
-                theseries = pd.Series(imagelist, name="image_data", dtype="object")
-                image_data = dd.from_pandas(theseries, npartitions=1).reset_index()
+                if theproperty.dataframe == "dask":
+
+                    theseries = pd.Series(imagelist, name="image_data", dtype="object")
+                    image_data = dd.from_pandas(theseries, npartitions=1).reset_index()
+                elif theproperty.dataframe == "pandas":
+                    image_data = pd.DataFrame(imagelist, index=["image_data"])
+                else:
+                    logger.Info("no " + theproperty.dataframe + " can use!")
             else:
                 logger.Error(imagedata_path + " is not exist!")
         return image_data
@@ -88,6 +106,12 @@ class Dataset:
         tabular_path = self.data_path['tabular_path']
         if tabular_path is None:
             return None
-        tabular_data = dd.read_csv(tabular_path)
+        if theproperty.dataframe == "dask":
+            tabular_data = dd.read_csv(tabular_path)
+        elif theproperty.dataframe == "pandas":
+            tabular_data = pd.read_csv(tabular_path)
+        else:
+            logger.Info("no " + theproperty.dataframe + " can use!")
+
         return tabular_data
 

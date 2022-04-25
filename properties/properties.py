@@ -21,7 +21,7 @@ class properties:
         self.datasetlocation = "data/datasets/"
         self.filter = "MLFEvaluation"
         self.wrapper = "AucWrapperEvaluation"
-        self.thread = 1
+        self.thread = 8
         self.fsocre = 0.1
         self.maxevaluationattsperiter = 1500
         self.backmodelpath = "data/model/"
@@ -33,5 +33,7 @@ class properties:
         self.temppath = "data/temp/"
         self.targetmutil = False
         self.targetclasses = 2
-        self.finalchosenopspath = "data/result/"
+        self.finalchosenopspath = "data/finalchosen/"
+        self.dataframe = "dask"
+        self.maxFEvaluationnums = 1000
 theproperty = properties()

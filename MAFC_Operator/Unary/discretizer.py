@@ -16,8 +16,14 @@ class Discretizer(Unary):
     def processTrainingSet(self, dataset, sourceColumns, targetColumns):
 
         columnname = sourceColumns[0]['name']
-        self.max_float = dataset[columnname].max().compute()
-        self.min_float = dataset[columnname].min().compute()
+        if theproperty.dataframe == "dask":
+            self.max_float = dataset[columnname].max().compute()
+            self.min_float = dataset[columnname].min().compute()
+        elif theproperty.dataframe == "pandas":
+            self.max_float = dataset[columnname].max()
+            self.min_float = dataset[columnname].min()
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
         diff = self.max_float - self.min_float
         #print(diff)
         self.therange = diff / self.upperbound
@@ -37,9 +43,12 @@ class Discretizer(Unary):
             except Exception as ex:
                 #logger.Info(" data =  " + str(data) + " " + str(therange) + " " + str(min_float))
                 return 0
-
-        columndata = dataset[columnname].apply(getdiscretizer, therange=self.therange, min_float=self.min_float, nums = self.upperbound,meta=('getdiscretizer', 'int32'))
-
+        if theproperty.dataframe == "dask":
+            columndata = dataset[columnname].apply(getdiscretizer, therange=self.therange, min_float=self.min_float, nums=self.upperbound, meta=('getdiscretizer', 'int32'))
+        elif theproperty.dataframe == "pandas":
+            columndata = dataset[columnname].apply(getdiscretizer, therange=self.therange, min_float=self.min_float, nums=self.upperbound)
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
         name = "Discretizer(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

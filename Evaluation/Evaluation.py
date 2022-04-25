@@ -12,7 +12,7 @@ class evalutionType(Enum):
 class evalutionScoringMethod(Enum):
     AUC = 0
     InformationGain = 1
-    ProbDiff = 2
+    Fone = 2
     LogLoss = 3
     ClassifierProbability = 4
 

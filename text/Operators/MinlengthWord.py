@@ -1,5 +1,7 @@
 from text.TextOperator import TextOperator
 from spacy.lang.en import English
+from logger.logger import logger
+from properties.properties import theproperty
 
 
 class MinlengthWord(TextOperator):
@@ -25,7 +27,14 @@ class MinlengthWord(TextOperator):
                 if len(wd) < len(word):
                     word = wd
             return word
-        series = data.iloc[:, -1].apply(getMinlengthWord, nlp=nlp, meta=('getMinlengthWord', 'object'))
+
+        if theproperty.dataframe == "dask":
+            series = data.iloc[:, -1].apply(getMinlengthWord, nlp=nlp, meta=('getMinlengthWord', 'object'))
+        elif theproperty.dataframe == "pandas":
+            series = data.iloc[:, -1].apply(getMinlengthWord, nlp=nlp)
+        else:
+            logger.Info(f"{theproperty.dataframe} can not use !")
+
         return series
 
     def getName(self):

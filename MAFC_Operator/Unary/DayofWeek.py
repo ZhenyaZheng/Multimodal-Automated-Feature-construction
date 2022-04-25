@@ -1,5 +1,7 @@
 from MAFC_Operator.Unary.unary import Unary
 from MAFC_Operator.operator_base import outputType
+from properties.properties import theproperty
+from logger.logger import logger
 
 
 class DayofWeek(Unary):
@@ -23,13 +25,19 @@ class DayofWeek(Unary):
         def getweek(date):
             return date.weekday()
 
-        columndata = dataset[columnname].apply(getweek, meta=('getweek', 'i8'))
+        if theproperty.dataframe == "dask":
+            columndata = dataset[columnname].apply(getweek, meta=('getweek', 'int32'))
+        elif theproperty.dataframe == "pandas":
+            columndata = dataset[columnname].apply(getweek)
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
+
         name = "DayofWeek(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn
 
     def isMatch(self, dataset, sourceColumns, targetColumns) -> bool:
-        if super(DayofWeek, self).isMatch(dataset,sourceColumns,targetColumns):
+        if super(DayofWeek, self).isMatch(dataset, sourceColumns,targetColumns):
             if sourceColumns[0]['type'] == outputType.Date:
                return True
         return False

@@ -1,5 +1,7 @@
 from text.TextOperator import TextOperator
 from spacy.lang.en import English
+from logger.logger import logger
+from properties.properties import theproperty
 
 
 class MinNumberPreDollor(TextOperator):
@@ -28,7 +30,14 @@ class MinNumberPreDollor(TextOperator):
                         if num < minnums:
                             minnums = num
             return minnums
-        series = data.iloc[:, -1].apply(getMinDollor, nlp=nlp, meta=('getMinDollor', 'f8'))
+
+        if theproperty.dataframe == "dask":
+            series = data.iloc[:, -1].apply(getMinDollor, nlp=nlp, meta=('getMinDollor', 'f8'))
+        elif theproperty.dataframe == "pandas":
+            series = data.iloc[:, -1].apply(getMinDollor, nlp=nlp)
+        else:
+            logger.Info(f"{theproperty.dataframe} can not use !")
+
         return series
 
     def getName(self):

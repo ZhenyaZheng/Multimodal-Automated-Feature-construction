@@ -1,4 +1,6 @@
 import os
+from Evaluation.WEvaluation.FoneEvaluation import FoneEvaluation
+from Evaluation.WEvaluation.LogLossEvaluation import LogLossEvaluation
 from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
 from Evaluation.FEvaluation.MLFEvalution import MLFEvaluation
 from Evaluation.WEvaluation.AucWrapperEvaluation import AucWrapperEvaluation
@@ -51,7 +53,10 @@ def getInfo(data):
             columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
             info.append(columninfo)
             continue
-        datavalues = data[name].value_counts().compute()
+        if theproperty.dataframe == "dask":
+            datavalues = data[name].value_counts().compute()
+        else:
+            datavalues = data[name].value_counts()
         lensofvalues = len(datavalues)
         if (lenofdata == lensofvalues or lensofvalues == 1):
             del data[name]
@@ -101,8 +106,12 @@ def getEvaluation(name, datadict):
         evaluation = AucWrapperEvaluation()
     elif name == "InformationGain":
         evaluation = InformationGainFilterEvaluator()
+    elif name == "LogLossEvaluation":
+        evaluation = LogLossEvaluation()
     elif name == "MLFEvaluation":
         evaluation = MLFEvaluation(datadict)
+    elif name == "FoneEvaluation":
+        evaluation = FoneEvaluation()
     else:
         logger.Error("No this Evaluation" + name)
     return evaluation
@@ -116,6 +125,26 @@ def Merge_Data(image_data, text_data, tab_data):
     :return:dask.dataframe.Dataframe
     '''
     data = None
+    if theproperty.dataframe == "pandas":
+        if image_data is not None:
+            data = image_data
+            if text_data is not None:
+                data = pddMerge(data, text_data)
+                if tab_data is not None:
+                    data = pddMerge(data, tab_data)
+            elif tab_data is not None:
+                data = pddMerge(data, tab_data)
+        else:
+            if text_data is not None:
+                data = text_data
+                if tab_data is not None:
+                    data = pddMerge(data, tab_data)
+            elif tab_data is not None:
+                data = tab_data
+        if data is None:
+            logger.Info(f"Error, No data!")
+        data.name = theproperty.datasetname
+        return data
     if image_data is not None:
         data = image_data
         if text_data is not None:
@@ -133,6 +162,13 @@ def Merge_Data(image_data, text_data, tab_data):
             data = tab_data
     if data is None:
         logger.Error(f"No data")
+
+    thetime = getNowTimeStr()
+    if data is not None:
+        tempimagedir = theproperty.temppath + theproperty.datasetname + "_" + thetime
+        os.makedirs(tempimagedir)
+        data.to_csv(tempimagedir, index=False)
+        data = dd.read_csv(tempimagedir + "/*.part")
     data.name = theproperty.datasetname
     return data
 
@@ -148,20 +184,21 @@ def getDatadict(dataset, operatorbyself=None, operatorignore=None):
     imageoper = None
     textigoper = None
     imageigoper = None
-    if operatorbyself != None:
-        if operatorbyself.get("text") != None:
+    if operatorbyself is not None:
+        if operatorbyself.get("text") is not None:
             textoper = operatorbyself["text"]
-        if operatorbyself.get("image") != None:
+        if operatorbyself.get("image") is not None:
             imageoper = operatorbyself["image"]
-    if operatorignore != None:
-        if operatorignore.get("text") != None:
+    if operatorignore is not None:
+        if operatorignore.get("text") is not None:
             textigoper = operatorignore["text"]
-        if operatorignore.get("image") != None:
+        if operatorignore.get("image") is not None:
             imageigoper = operatorignore["image"]
     image_fc = Image_FC(dataset.data_image, imageoper, imageigoper)
     text_fc = Text_FC(dataset.data_text, textoper, textigoper)
     ##合并image、text和tabular
-    image_fc,text_fc = saveData(image_fc, text_fc)
+    if theproperty.dataframe == "dask":
+        image_fc, text_fc = saveData(image_fc, text_fc)
     data = Merge_Data(image_fc, text_fc, dataset.data_tabular)
     #textview = text_fc.compute()
     #imageview = image_fc.compute()
@@ -199,17 +236,6 @@ def saveData(image_fc: dd.DataFrame, text_fc: dd.DataFrame):
         #textview = text_fc.compute()
     return image_fc, text_fc
 
-def ddMerge(data1: dd.DataFrame, data2: dd.DataFrame):
-    '''
-    弃用
-    :param data1:
-    :param data2:
-    :return:
-    '''
-    for index in data2.columns:
-        data1[index] = data2[index]
-    return data1
-
 def generateModelData(dataset: Dataset):
     '''
     该函数用于生成过滤器模型所需的数据，请先利用其它数据集创建Dataset(),设置好theproperty.datasetlocation
@@ -224,8 +250,19 @@ def getNowTimeStr():
     return thetime
 
 def saveDateFrame(dataframe: dd.DataFrame, name: str = "dataset"):
-    serialize(theproperty.temppath + name + getNowTimeStr(), dataframe)
+    if dataframe is not None:
+        serialize(theproperty.temppath + name + getNowTimeStr(), dataframe)
     newdir = theproperty.temppath + "dataframe" + getNowTimeStr()
     os.mkdir(newdir)
     if dataframe is not None:
         dataframe.to_csv(newdir, index=False)
+
+def pddMerge(data1: dd.DataFrame, data2: dd.DataFrame):
+    '''
+    :param data1:
+    :param data2:
+    :return:
+    '''
+    for index in data2.columns:
+        data1[index] = data2[index]
+    return data1

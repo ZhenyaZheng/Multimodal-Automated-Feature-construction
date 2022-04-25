@@ -1,5 +1,7 @@
 from MAFC_Operator.Unary.unary import Unary
 from MAFC_Operator.operator_base import outputType
+from properties.properties import theproperty
+from logger.logger import logger
 
 
 class IsWeekend(Unary):
@@ -25,7 +27,13 @@ class IsWeekend(Unary):
                 return 1
             return 0
 
-        columndata = dataset[columnname].apply(isweekend, meta=('isweekend', 'i8'))
+        if theproperty.dataframe == "dask":
+            columndata = dataset[columnname].apply(isweekend, meta=('isweekend', 'int32'))
+        elif theproperty.dataframe == "pandas":
+            columndata = dataset[columnname].apply(isweekend)
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
+
         name = "IsWeekend(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

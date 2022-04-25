@@ -189,13 +189,14 @@ class DatasetAttributes:
                     column = cl
                     break
             if column is None:
-                logger.Error(ci.name, "columninfo is not exist")
+                logger.Info("ci.name" + "columninfo is not exist")
             newcolumn = [ci.name, ci, column]
             tempList = []
-            tempList.append(newcolumn)
-            ige.initFEvaluation(tempList)
-            score = ige.produceScore(replicatedDataset, None, None, None)
-            IGScoresPerColumnIndex.append(score)
+            if newcolumn is not None:
+                tempList.append(newcolumn)
+                ige.initFEvaluation(tempList)
+                score = ige.produceScore(replicatedDataset, None, None, None)
+                IGScoresPerColumnIndex.append(score)
 
             if ci.dtype == "int64" or ci.dtype == "int32":
                 IGScoresPerDiscreteColumnIndex.append(score)
@@ -242,9 +243,16 @@ class DatasetAttributes:
         for i in range(len(self.numericAttributesList) - 1):
             for j in range(i + 1, len(self.numericAttributesList)):
                 if i != j:
-                    tstat, pval = scipy.stats.ttest_ind(
-                        datadict['data'][self.numericAttributesList[i].getName()].values.compute(),
-                        datadict['data'][self.numericAttributesList[j].getName()].values.compute())
+                    if theproperty.dataframe == "dask":
+                        listi = datadict['data'][self.numericAttributesList[i].getName()].values.compute()
+                        listj = datadict['data'][self.numericAttributesList[j].getName()].values.compute()
+                    elif theproperty.dataframe == "pandas":
+                        listi = datadict['data'][self.numericAttributesList[i].getName()].values
+                        listj = datadict['data'][self.numericAttributesList[j].getName()].values
+                    else:
+                        logger.Info(f"no {theproperty.dataframe} can use")
+                    tstat, pval = scipy.stats.ttest_ind(listi, listj)
+
                     tTestVal = abs(tstat)
                     if not np.isnan(tTestVal) and not np.isinf(tTestVal):
                         pairedTTestValuesList.append(tTestVal)
@@ -295,8 +303,12 @@ class DatasetAttributes:
             sourceColumnslist = [{'name': tl.getName(), 'type': tl.getType()} for tl in tempColumnsList]
             erduo.processTrainingSet(datadict['data'], sourceColumnslist, None)
             discretizedAttribute = erduo.generateColumn(datadict['data'], sourceColumnslist, None)
-            discretizedAttdata = list(discretizedAttribute['data'].compute().values)
-
+            if theproperty.dataframe == "dask":
+                discretizedAttdata = list(discretizedAttribute['data'].values.compute())
+            elif theproperty.dataframe == "pandas":
+                discretizedAttdata = list(discretizedAttribute['data'].values)
+            else:
+                logger.Info(f"no {theproperty.dataframe} can use")
             discretizedColumns.append(discretizedAttdata)
 
         # 现在，我们将所有原始离散属性添加到此列表中，并再次运行卡方检验
@@ -407,10 +419,20 @@ class DatasetAttributes:
         newcol2 = col2
         if type(col1) != list:
             n = col1.getNumsOfUnique()
-            newcol1 = data[col1.getName()].compute().values
+            if theproperty.dataframe == "dask":
+                newcol1 = data[col1.getName()].values.compute()
+            elif theproperty.dataframe == "pandas":
+                newcol1 = data[col1.getName()].values
+            else:
+                logger.Info(f"no {theproperty.dataframe} can use")
         if type(col2) != list:
             m = col2.getNumsOfUnique()
-            newcol2 = data[col2.getName()].compute().values
+            if theproperty.dataframe == "dask":
+                newcol2 = data[col2.getName()].values.compute()
+            elif theproperty.dataframe == "pandas":
+                newcol2 = data[col2.getName()].values
+            else:
+                logger.Info(f"no {theproperty.dataframe} can use")
         if len(newcol1) != len(newcol2):
             return None
 

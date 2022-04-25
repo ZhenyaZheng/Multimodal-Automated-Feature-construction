@@ -1,7 +1,7 @@
 import copy
 import dask.dataframe as dd
 import pandas as pd
-
+from properties.properties import theproperty
 from text.Operators import *
 from text.TextOperator import TextOperator
 from logger.logger import logger
@@ -30,15 +30,23 @@ def process(textdata, opertorslist=None, ingorelist=None):
     :return: dask.dataframe
     '''
     pdata = pd.DataFrame()
-    data = dd.from_pandas(pdata, npartitions=10)
+    if theproperty.dataframe == "dask":
+        data = dd.from_pandas(pdata, npartitions=10)
+    elif theproperty.dataframe == "pandas":
+        data = pdata
     operslist : list[TextOperator] = getOperator(opertorslist, ingorelist)
     for oper in operslist:
         try:
             newseries = oper.process(textdata)
             #print(oper.getName())
             #seriesdata = newseries.compute()
-            if newseries is not None and len(newseries.value_counts().compute()) > 1:
-                data[oper.getName()] = newseries
+            if newseries is not None:
+                if theproperty.dataframe == "dask":
+                    uniqueval = len(newseries.value_counts().compute())
+                elif theproperty.dataframe == "pandas":
+                    uniqueval = len(newseries.value_counts())
+                if uniqueval > 1:
+                    data[oper.getName()] = newseries
         except Exception as ex:
                 logger.Error(f'Failed in func "text_process" with exception: {ex}')
 

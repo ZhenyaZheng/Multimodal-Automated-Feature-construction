@@ -1,6 +1,7 @@
 import datetime
 import os.path
 import copy
+import threading
 from shutil import copyfile
 import numpy as np
 import pandas as pd
@@ -41,7 +42,12 @@ class MLAttributeManager:
             else:
                 logger.Error("datasetlocation is not exist")
             if os.path.isfile(backgroundFilePath + ".csv"):
-                datatrain = dask.dataframe.read_csv(backgroundFilePath + ".csv")
+                if theproperty.dataframe == "dask":
+                    datatrain = dask.dataframe.read_csv(backgroundFilePath + ".csv")
+                elif theproperty.dataframe == "pandas":
+                    datatrain = pd.read_csv(backgroundFilePath + ".csv")
+                else:
+                    logger.Info(f"no {theproperty.dataframe} can use")
                 y = datatrain.iloc[:, -1]
                 del datatrain[y.name]
                 model = self.buildModel(datatrain, y, theproperty.classifier)
@@ -53,10 +59,16 @@ class MLAttributeManager:
     def buildModel(self, datatarin, target, classifier):
         wevaluation = WEvaluation()
         model = wevaluation.getClassifier(classifier)
-        client = Client()
-        clf = ParallelPostFit(model, scoring="r2")
-        clf.fit(datatarin, target)
-        client.close()
+        if theproperty.dataframe == "dask":
+            client = Client()
+            clf = ParallelPostFit(model, scoring="r2")
+            clf.fit(datatarin, target)
+            client.close()
+        elif theproperty.dataframe == "pandas":
+            model.fit(datatarin, target)
+            return model
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
         return clf
 
     def addFiletoTargetfile(self, modelfilepath, datasetfilepath, addhead):
@@ -81,7 +93,10 @@ class MLAttributeManager:
         filepath = theproperty.datasetlocation + filename
         if os.path.isfile(filepath):
             logger.Info(datadict["data"].name + "candidatedata has existed")
-            datainstances = dask.dataframe.read_csv(filepath)
+            if theproperty.dataframe == "dask":
+                datainstances = dask.dataframe.read_csv(filepath)
+            elif theproperty.dataframe == "pandas":
+                datainstances = pd.read_csv(filepath)
             return datainstances
 
         dataattsvalues = self.generateTrainsetAtts(datadict)
@@ -99,6 +114,9 @@ class MLAttributeManager:
         :return:[{}]
         '''
         try:
+            trainsetattspath = theproperty.resultfilepath + datadict["data"].name + "candidateattslist"
+            if os.path.isfile(trainsetattspath):
+                return deserialize(trainsetattspath)
             candidateattslist = []
             classifiers = theproperty.classifiersforMLAttributes
             dbas = DatasetAttributes()
@@ -122,43 +140,54 @@ class MLAttributeManager:
                 otheroperators = unaryoperators + otheroperators
                 numofthread = theproperty.thread
                 index = 1
+                lock = threading.Lock()
 
-                def myfunction(ops):
+                def myfunction(ops, **kwargs):
                     try:
-                        datacopy = copy.deepcopy(datadict)
+                        oms = OperatorManager()
+                        datacopy = copy.deepcopy(kwargs['datadict'])
                         candidateatt = oms.generateColumn(datacopy["data"], ops, False)
+                        if candidateatt is None:
+                            return
                         obas = OperatorBasedAttributes()
                         oms.addColumn(datacopy, candidateatt)
                         candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
 
-                        evaluationresult = evaluator.runClassifier(classifier, datacopy)
-                        auc = evaluator.calculateAUC(evaluationresult)
-                        deltaAUC = auc - originalAUC
+                        evaluationresult = kwargs['evaluator'].runClassifier(kwargs['classifier'], datacopy)
+                        auc = kwargs['evaluator'].calculateAUC(evaluationresult)
+                        deltaAUC = auc - kwargs['originalAUC']
                         if deltaAUC > 0.01:
                             classatt = AttributeInfo("classattribute", outputType.Discrete, 1, 2)
                             logger.Info("find positive match")
                         else:
                             classatt = AttributeInfo("classattribute", outputType.Discrete, 0, 2)
 
-                        for datainfos in datasetatts.values():
+                        for datainfos in kwargs['datasetatts'].values():
                             candidateattsdict[len(candidateattsdict)] = datainfos
                         candidateattsdict[len(candidateattsdict)] = classatt
-                        candidateattslist.append(candidateattsdict)
+                        lock.acquire()
+                        kwargs['candidateattslist'].append(candidateattsdict)
+                        lock.release()
                     except Exception as ex:
                         logger.Error(f"generateTrainsetAtts", ex)
 
                 if numofthread > 1:
-                    parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
+                    #parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
+                    threadpool = parallel.MyThreadPool(theproperty.thread, otheroperators)
+                    threadpool.run(myfunction, datadict=datadict, evaluator=evaluator, classifier=classifier,
+                                   originalAUC=originalAUC, datasetatts=datasetatts, candidateattslist=candidateattslist)
                 else:
                     for ops in otheroperators:
-                        #if index > 20:break
+
                         if index % 100 == 0:
                             logger.Info("have finish " + str(index) + " operators, and time is " + str(datetime.datetime.now()))
-                        if index > 800:
-                            break
+                        # if index > 800:
+                        #     break
                         try:
                             datacopy = copy.deepcopy(datadict)
                             candidateatt = oms.generateColumn(datacopy["data"], ops, False)
+                            if candidateatt is None:
+                                continue
                             obas = OperatorBasedAttributes()
                             oms.addColumn(datacopy, candidateatt)
                             candidateattsdict = obas.getOperatorsBasedAttributes(datacopy, ops, candidateatt)
@@ -180,10 +209,12 @@ class MLAttributeManager:
                         except Exception as ex:
                             logger.Error(f"generateTrainsetAtts", ex)
                             continue
-        except  Exception as ex:
+
+        except Exception as ex:
             logger.Error(f'Failed in func "generateTrainsetAtts" with exception: {ex}')
-            serialize(theproperty.resultfilepath + "candidateattslist", candidateattslist)
+
         finally:
+            serialize(theproperty.resultfilepath + datadict["data"].name + "candidateattslist", candidateattslist)
             return candidateattslist
 
     def generateValuesTabular(self, dataattsvalues):
@@ -204,12 +235,17 @@ class MLAttributeManager:
                 for ats in dav.items():#(1:att)
                     index = ats[0]
                     att = ats[1]
-                    df.loc[num, thename[index]] = att.getValue()
+                    if df[thename[index]].dtype in ["float", "float32", "float64"]:
+                        val = (float)(att.getValue())
+                    else:
+                        val = (int)(att.getValue())
+                    df.loc[num, thename[index]] = val
                 num += 1
-            return df
         except Exception as ex:
             logger.Error(f"generateValuesTabular error: {ex}")
-            return None
+        finally:
+            return df
+
 
 
     def generateAtts(self, dataattsvalue, sizen: int):
@@ -220,13 +256,13 @@ class MLAttributeManager:
         '''
         attributelist = []
         for attif in dataattsvalue.values():
-            datase = [0 for _ in range(sizen)]
+            # datase = [0 for _ in range(sizen)]
             if attif.getType() == outputType.Discrete:
                 type = "int"
-                #datase = [0 for _ in range(sizen)]
+                datase = np.zeros(sizen, "int")
             elif attif.getType() == outputType.Numeric:
                 type = "float"
-                datase = [0.0 for _ in range(sizen)]
+                datase = np.zeros(sizen, "float")
             else:
                 logger.Error("MLatt is not support except int and float type")
 

@@ -1,10 +1,10 @@
 from MAFC_Operator.Groupby.groupby import Groupby
 from MAFC_Operator.operator_base import outputType
 from logger.logger import logger
-
+from properties.properties import theproperty
 class GroupCount(Groupby):
     def __init__(self):
-        super(GroupCount, self).__init__()
+        self.data = {}
 
     def requiredInputType(self) -> outputType:
         return outputType.Discrete
@@ -21,9 +21,14 @@ class GroupCount(Groupby):
             sname.append(sc['name'])
         tname = targetColumns[0]['name']
         columndata = dataset.groupby(sname)[tname].agg("count")
-        thedata = columndata.compute()
+        if theproperty.dataframe == "dask":
+            thedata = columndata.compute()
+        elif theproperty.dataframe == "pandas":
+            thedata = columndata
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
         value = [i for i in thedata.values]
-        key = [i for i in thedata.index]
+        key = [tuple([i]) if type(i) == int else tuple(i) for i in thedata.index]
         if len(value) != len(key):
             logger.Info("GroupBy Process Error, len(value) != len(key)!")
             return
@@ -37,14 +42,19 @@ class GroupCount(Groupby):
         def getcount(df, sourceColumns, datadict):
             sname = [sc['name'] for sc in sourceColumns]
             data = df[sname]
-            key = tuple(data.values)
+            key = [(int)(val) for val in data]
+            key = tuple(key)
             if datadict.get(key) is None:
-                #raise()
-                #logger.Info("GroupCount:self.data is not init")
+                logger.Info("GroupCount: self.data is not init")
                 return 0
             return datadict[key]
+        if theproperty.dataframe == "dask":
+            columndata = dataset.apply(getcount, sourceColumns=sourceColumns, datadict=self.data, meta=('getcount', 'float'), axis=1)
+        elif theproperty.dataframe == "pandas":
+            columndata = dataset.apply(getcount, sourceColumns=sourceColumns, datadict=self.data, axis=1)
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
 
-        columndata = dataset.apply(getcount, sourceColumns=sourceColumns, datadict=self.data, meta=('getcount', 'float'), axis=1)
         name = self.getName() + "(" + self.generateName(sourceColumns, targetColumns) + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

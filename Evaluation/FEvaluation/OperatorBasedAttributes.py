@@ -1,4 +1,4 @@
-import copy
+from properties.properties import theproperty
 import numpy as np
 import dask.dataframe as dd
 from scipy import stats
@@ -61,8 +61,9 @@ class OperatorBasedAttributes:
             tempList = []
             tempList.append(evaluationatt)
             igfe = InformationGainFilterEvaluator()
-            igfe.initFEvaluation(tempList)
-            #self.IGScore = igfe.produceScore(datadict, None, None, None)
+            if evaluationatt is not None:
+                igfe.initFEvaluation(tempList)
+                self.IGScore = igfe.produceScore(datadict, None, None, None)
 
             self.ProcessOperators(oa)
 
@@ -70,7 +71,7 @@ class OperatorBasedAttributes:
 
             self.performStatisticalTestsOnSourceAndTargetAttributes(datadict['data'], oa)
 
-            #self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict, oa)
+            self.performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(datadict, oa)
 
         except Exception as ex:
             logger.Error(f'Failed in func "getOperatorsBasedAttributes" with exception: {ex}')
@@ -121,7 +122,7 @@ class OperatorBasedAttributes:
             logger.Error("operatorType Error")
 
     def getDiscreteID(self, oper):
-        if oper == None:
+        if oper is None:
             return 0
 
         namedict = {"Discretizer": 1, "DayofWeek": 2, "HourofDay": 3, "IsWeekend": 4}
@@ -130,7 +131,7 @@ class OperatorBasedAttributes:
         return 0
 
     def getNormalizerID(self,oper):
-        if oper == None:
+        if oper is None:
             return 0
         if oper.getName() == "StdOperator":
             return 1
@@ -170,10 +171,21 @@ class OperatorBasedAttributes:
                 pass
             else:
                 columnname = oa.targetColumns[0].getName()
-                self.maxValueOfNumericTargetAttribute = dataset[columnname].max().compute()
-                self.minValueOfNumericTargetAttribute = dataset[columnname].min().compute()
-                self.avgValueOfNumericTargetAttribute = dataset[columnname].mean().compute()
-                self.stdValueOfNumericTargetAttribute = dataset[columnname].std().compute()
+                if columnname not in dataset.columns:
+                    logger.Info(columnname + " is not exist in datadict['data']")
+                else:
+                    if theproperty.dataframe == "dask":
+                        self.maxValueOfNumericTargetAttribute = dataset[columnname].max().compute()
+                        self.minValueOfNumericTargetAttribute = dataset[columnname].min().compute()
+                        self.avgValueOfNumericTargetAttribute = dataset[columnname].mean().compute()
+                        self.stdValueOfNumericTargetAttribute = dataset[columnname].std().compute()
+                    elif theproperty.dataframe == "pandas":
+                        self.maxValueOfNumericTargetAttribute = dataset[columnname].max()
+                        self.minValueOfNumericTargetAttribute = dataset[columnname].min()
+                        self.avgValueOfNumericTargetAttribute = dataset[columnname].mean()
+                        self.stdValueOfNumericTargetAttribute = dataset[columnname].std()
+                    else:
+                        logger.Info(f"no {theproperty.dataframe} can use")
         except Exception as ex:
             logger.Error(f"processSourceAndTargetAttributes error: {ex}")
 
@@ -184,57 +196,76 @@ class OperatorBasedAttributes:
         :param oa:
         :return:
         '''
+        try:
+            if len(oa.sourceColumns) == 2:
+                if oa.sourceColumns[0].getType() == outputType.Discrete and oa.sourceColumns[1].getType() == outputType.Discrete:
+                    if theproperty.dataframe == "dask":
+                        templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
+                        templist2 = list(dataset[oa.sourceColumns[1].getName()].values.compute())
+                    elif theproperty.dataframe == "pandas":
+                        templist1 = list(dataset[oa.sourceColumns[0].getName()].values)
+                        templist2 = list(dataset[oa.sourceColumns[1].getName()].values)
+                    else:
+                        logger.Info(f"no {theproperty.dataframe} can use")
+                    list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2, oa.sourceColumns[0].getNumsOfUnique() , oa.sourceColumns[1].getNumsOfUnique())
+                    tempval = None
+                    if list1 is not None:
+                        tempval = self.statisticoperation.chisquare(list1)
+                    if tempval is not None:
+                        self.chiSquareTestValueForSourceAttributes = tempval
+                    else:
+                        self.chiSquareTestValueForSourceAttributes = 0
 
-        if len(oa.sourceColumns) == 2:
-            if oa.sourceColumns[0].getType() == outputType.Discrete and oa.sourceColumns[1].getType() == outputType.Discrete:
-                templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
-                templist2 = list(dataset[oa.sourceColumns[1].getName()].values.compute())
-                list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2, oa.sourceColumns[0].getNumsOfUnique() , oa.sourceColumns[1].getNumsOfUnique())
-                tempval = None
-                if list1 is not None:
-                    tempval = self.statisticoperation.chisquare(list1)
-                if tempval is not None:
-                    self.chiSquareTestValueForSourceAttributes = tempval
+            if len(oa.sourceColumns) == 1 and oa.sourceColumns[0].getType() == outputType.Numeric and oa.targetColumns is not None and len(oa.targetColumns) == 1:
+                if theproperty.dataframe == "dask":
+                    templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
+                    templist2 = list(dataset[oa.targetColumns[0].getName()].values.compute())
+                elif theproperty.dataframe == "pandas":
+                    templist1 = list(dataset[oa.sourceColumns[0].getName()].values)
+                    templist2 = list(dataset[oa.targetColumns[0].getName()].values)
                 else:
-                    self.chiSquareTestValueForSourceAttributes = -1
+                    logger.Info(f"no {theproperty.dataframe} can use")
+                self.pairedTTestValueForSourceAndTargetAttirbutes = stats.ttest_rel(templist1, templist2)[0]
 
-        if len(oa.sourceColumns) == 1 and oa.sourceColumns[0].getType() == outputType.Numeric and oa.targetColumns is not None and len(oa.targetColumns) == 1:
-            templist1 = list(dataset[oa.sourceColumns[0].getName()].values.compute())
-            templist2 = list(dataset[oa.targetColumns[0].getName()].values.compute())
-            self.pairedTTestValueForSourceAndTargetAttirbutes = stats.ttest_rel(templist1, templist2)
+            if len(oa.sourceColumns) == 1 and oa.targetColumns == None:
+                pass
+            else:
+                columnstoanalyze = []
+                for ci in oa.sourceColumns:
+                    if ci.getType() == outputType.Discrete:
+                        columnstoanalyze.append(ci)
+                    else:
+                        if ci.getType() == outputType.Numeric:
+                            newcolumn, thedata = self.statisticoperation.discretizeNumericColumn(dataset, ci, None)
+                            columnstoanalyze.append(newcolumn)
+                            if newcolumn.getName() not in dataset.columns:
+                                dataset[newcolumn.getName()] = thedata
+                if len(columnstoanalyze) > 1:
+                    chiSquareTestValues = []
+                    for i in range(0, len(columnstoanalyze) - 1):
+                        for j in range(i+1, len(columnstoanalyze)):
+                            if theproperty.dataframe == "dask":
+                                templist1 = list(dataset[columnstoanalyze[i].getName()].values.compute())
+                                templist2 = list(dataset[columnstoanalyze[j].getName()].values.compute())
+                            elif theproperty.dataframe == "pandas":
+                                templist1 = list(dataset[columnstoanalyze[i].getName()].values)
+                                templist2 = list(dataset[columnstoanalyze[j].getName()].values)
+                            else:
+                                logger.Info(f"no {theproperty.dataframe} can use")
 
-
-
-        if len(oa.sourceColumns) == 1 and oa.targetColumns == None:
-            pass
-        else:
-            columnstoanalyze = []
-            for ci in oa.sourceColumns:
-                if ci.getType() == outputType.Discrete:
-                    columnstoanalyze.append(ci)
-                else:
-                    if ci.getType() == outputType.Numeric:
-                        newcolumn, thedata = self.statisticoperation.discretizeNumericColumn(dataset, ci, None)
-                        columnstoanalyze.append(newcolumn)
-                        if newcolumn.getName() not in dataset.columns:
-                            dataset[newcolumn.getName()] = thedata
-            if len(columnstoanalyze) > 1:
-                chiSquareTestValues = []
-                for i in range(0, len(columnstoanalyze) - 1):
-                    for j in range(i+1, len(columnstoanalyze)):
-                        templist1 = list(dataset[columnstoanalyze[i].getName()].values.compute())
-                        templist2 = list(dataset[columnstoanalyze[j].getName()].values.compute())
-                        list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2, columnstoanalyze[i].getNumsOfUnique() , columnstoanalyze[j].getNumsOfUnique())
-                        chiSquareTestVal = self.statisticoperation.chisquare(list1)
-                        if list1 is not None:
-                            continue
-                        if chiSquareTestVal != None:
-                            chiSquareTestValues.append(chiSquareTestVal)
-                    if len(chiSquareTestValues) > 0:
-                        self.maxChiSquareTsetForSourceAndTargetAttributes = np.max(chiSquareTestValues)
-                        self.minChiSquareTsetForSourceAndTargetAttributes = np.min(chiSquareTestValues)
-                        self.avgChiSquareTsetForSourceAndTargetAttributes = np.mean(chiSquareTestValues)
-                        self.stdChiSquareTsetForSourceAndTargetAttributes = np.std(chiSquareTestValues)
+                            list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1, templist2, columnstoanalyze[i].getNumsOfUnique() , columnstoanalyze[j].getNumsOfUnique())
+                            chiSquareTestVal = self.statisticoperation.chisquare(list1)
+                            if list1 is not None:
+                                continue
+                            if chiSquareTestVal != None:
+                                chiSquareTestValues.append(chiSquareTestVal)
+                        if len(chiSquareTestValues) > 0:
+                            self.maxChiSquareTsetForSourceAndTargetAttributes = np.max(chiSquareTestValues)
+                            self.minChiSquareTsetForSourceAndTargetAttributes = np.min(chiSquareTestValues)
+                            self.avgChiSquareTsetForSourceAndTargetAttributes = np.mean(chiSquareTestValues)
+                            self.stdChiSquareTsetForSourceAndTargetAttributes = np.std(chiSquareTestValues)
+        except Exception as ex:
+            logger.Error(f"performStatisticalTestsOnSourceAndTargetAttributes Error:{ex}", ex)
 
     def performStatisticalTestOnOperatorAssignmentAndDatasetAtributes(self, datadict, oa: Operators):
         columnstoanalyze = []
@@ -255,8 +286,15 @@ class OperatorBasedAttributes:
 
                 chisquaretestvalue = None
                 if dataci.getType() == outputType.Discrete:
-                    templist1 = list(dataset[ci.getName()].values.compute())
-                    templist2 = list(dataset[dataci.getName()].values.compute())
+                    if theproperty.dataframe == "dask":
+                        templist1 = list(dataset[ci.getName()].values.compute())
+                        templist2 = list(dataset[dataci.getName()].values.compute())
+                    elif theproperty.dataframe == "pandas":
+                        templist1 = list(dataset[ci.getName()].values)
+                        templist2 = list(dataset[dataci.getName()].values)
+                    else:
+                        logger.Info(f"no {theproperty.dataframe} can use")
+
                     list1 = self.statisticoperation.generateDiscreteAttributesCategoryIntersection(dataset, templist1,
                                                                         templist2, ci.getNumsOfUnique(), dataci.getNumsOfUnique())
                     if list1 is not None:

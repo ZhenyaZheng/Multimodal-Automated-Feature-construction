@@ -1,6 +1,7 @@
 from spacy.lang.en import English
 from spacy.tokens import Doc
-
+from logger.logger import logger
+from properties.properties import theproperty
 from text.TextOperator import TextOperator
 
 
@@ -23,7 +24,14 @@ class IsexistNum(TextOperator):
             if doc._.has_number:
                 return 1
             return 0
-        series = data.iloc[:, -1].apply(getExistNum, nlp=nlp, meta=('getExistNum', 'i8'))
+
+        if theproperty.dataframe == "dask":
+            series = data.iloc[:, -1].apply(getExistNum, nlp=nlp, meta=('getExistNum', 'int'))
+        elif theproperty.dataframe == "pandas":
+            series = data.iloc[:, -1].apply(getExistNum, nlp=nlp)
+        else:
+            logger.Info(f"{theproperty.dataframe} can not use !")
+
         return series
 
     def getName(self):

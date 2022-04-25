@@ -9,12 +9,12 @@ class LogLossEvaluation(WEvaluation):
         pass
 
     def produceScore(self, analyzedatasets, currentscore: ClassificationResults, oa, candidateatt):
-        if candidateatt != None:
+        if candidateatt is not None:
             #留坑
             analyzedatasets["data"][candidateatt[0]] = candidateatt[1]
         evaluationresults = self.runClassifier(theproperty.classifier, analyzedatasets)
         loss = self.calculateLoss(evaluationresults)
-        if currentscore != None:
+        if currentscore is not None:
             return loss - currentscore.getLogLoss()
         else:
             return loss

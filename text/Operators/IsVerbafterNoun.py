@@ -1,5 +1,7 @@
 from spacy.lang.en import English
 from text.TextOperator import TextOperator
+from logger.logger import logger
+from properties.properties import theproperty
 
 
 class IsVerbaferNoun(TextOperator):
@@ -25,7 +27,14 @@ class IsVerbaferNoun(TextOperator):
                         nums += 1
                         break
                 return nums
-        series = data.iloc[:, -1].apply(getIsVerbaferNoun, nlp=nlp, meta=('getIsVerbaferNoun', 'i8'))
+
+        if theproperty.dataframe == "dask":
+            series = data.iloc[:, -1].apply(getIsVerbaferNoun, nlp=nlp, meta=('getIsVerbaferNoun', 'int'))
+        elif theproperty.dataframe == "pandas":
+            series = data.iloc[:, -1].apply(getIsVerbaferNoun, nlp=nlp)
+        else:
+            logger.Info(f"{theproperty.dataframe} can not use !")
+
         return series
 
     def getName(self):

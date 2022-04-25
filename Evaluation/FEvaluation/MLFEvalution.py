@@ -55,18 +55,6 @@ class MLFEvaluation(FEvaluation):
             if self.classifier is None:
                 logger.Error("Classifier is not initialized")
             oba = OperatorBasedAttributes()
-            #logger.Info("op.name = " + oa.getName())
-            # listerror = ["{sources:[fc,];Targets:[mobile_wt,];GroupMin}", "{sources:[four_g,];Targets:[{sources:[battery_power,];Targets:[];StdOperator},];GroupMin}",
-            #              "{sources:[wifi,];Targets:[m_dep,];GroupMin}","{sources:[mobile_wt,];Targets:[clock_speed,];AddOperator}",
-            #              "{sources:[{sources:[px_height,];Targets:[];StdOperator},];Targets:[mobile_wt,];AddOperator}",
-            #              "{sources:[dual_sim,];Targets:[clock_speed,];GroupMin}", "{sources:[{sources:[px_height,];Targets:[];StdOperator},];Targets:[battery_power,];AddOperator}",
-            #              "{sources:[{sources:[clock_speed,];Targets:[];StdOperator},];Targets:[{sources:[battery_power,];Targets:[];StdOperator},];AddOperator}",
-            #              "{sources:[{sources:[battery_power,];Targets:[];StdOperator},];Targets:[clock_speed,];DivisOperator}",
-            #              "{sources:[sc_w,];Targets:[int_memory,];GroupMin}", "{sources:[pc,];Targets:[{sources:[battery_power,];Targets:[];StdOperator},];GroupMin}",
-            #              "{sources:[{sources:[int_memory,];Targets:[];StdOperator},];Targets:[{sources:[px_width,];Targets:[];StdOperator},];DivisOperator}",
-            #              "{sources:[n_cores,];Targets:[px_height,];GroupMin}"]
-            # if oa.getName() in listerror:
-            #     pass
 
             candidateAttributes = oba.getOperatorsBasedAttributes(datadict, oa, candidateAttribute)
             for das in self.datasetAttributes.values():
@@ -78,11 +66,16 @@ class MLFEvaluation(FEvaluation):
             model = self.classifier
             if df is None:
                 return 0
-            df = dask.dataframe.from_pandas(data=df, npartitions=1)
+
+            if theproperty.dataframe == "dask":
+                df = dask.dataframe.from_pandas(data=df, npartitions=1)
             # 预测
             df_true = model.predict_proba(df)
             #计算得分
-            score = df_true.compute()[0][1]
+            if theproperty.dataframe == "dask":
+                score = df_true.compute()[0][1]
+            elif theproperty.dataframe == "pandas":
+                score = df_true[0][1]
             return score
         except Exception as ex:
             logger.Error(f"MLFEvaluation produceScore error: {ex}")

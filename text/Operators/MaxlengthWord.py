@@ -1,5 +1,7 @@
 from text.TextOperator import TextOperator
 from spacy.lang.en import English
+from logger.logger import logger
+from properties.properties import theproperty
 
 
 class MaxlengthWord(TextOperator):
@@ -23,7 +25,14 @@ class MaxlengthWord(TextOperator):
                 if len(wd) > len(word):
                     word = wd
             return word
-        series = data.iloc[:, -1].apply(getMaxlengthWord, nlp=nlp, meta=('getMaxlengthWord', 'object'))
+
+        if theproperty.dataframe == "dask":
+            series = data.iloc[:, -1].apply(getMaxlengthWord, nlp=nlp, meta=('getMaxlengthWord', 'object'))
+        elif theproperty.dataframe == "pandas":
+            series = data.iloc[:, -1].apply(getMaxlengthWord, nlp=nlp)
+        else:
+            logger.Info(f"{theproperty.dataframe} can not use !")
+
         return series
 
     def getName(self):

@@ -1,5 +1,7 @@
 from MAFC_Operator.Unary.unary import Unary
 from MAFC_Operator.operator_base import outputType
+from properties.properties import theproperty
+from logger.logger import logger
 
 
 class HourofDay(Unary):
@@ -23,7 +25,13 @@ class HourofDay(Unary):
         def gethour(date):
             return date.time().hour
 
-        columndata = dataset[columnname].apply(gethour, meta=('gethour', 'i8'))
+        if theproperty.dataframe == "dask":
+            columndata = dataset[columnname].apply(gethour, meta=('gethour', 'int32'))
+        elif theproperty.dataframe == "pandas":
+            columndata = dataset[columnname].apply(gethour)
+        else:
+            logger.Info(f"no {theproperty.dataframe} can use")
+
         name = "HourofDay(" + columnname + ")"
         newcolumn = {"name": name, "data": columndata}
         return newcolumn

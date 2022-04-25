@@ -1,5 +1,8 @@
 from text.TextOperator import TextOperator
 from spacy.lang.en import English
+from logger.logger import logger
+from properties.properties import theproperty
+
 
 class CountCharacter(TextOperator):
     def __init__(self):
@@ -18,7 +21,14 @@ class CountCharacter(TextOperator):
             for word in words:
                 nums += len(word)
             return nums
-        series = data.iloc[:, -1].apply(getCountChara, nlp=nlp, meta=('getCountChara', 'i8'))
+
+        if theproperty.dataframe == "dask":
+            series = data.iloc[:, -1].apply(getCountChara, nlp=nlp, meta=('getCountChara', 'int32'))
+        elif theproperty.dataframe == "pandas":
+            series = data.iloc[:, -1].apply(getCountChara, nlp=nlp)
+        else:
+            logger.Info(f"{theproperty.dataframe} can not use !")
+
         return series
 
     def getName(self):

@@ -6,9 +6,9 @@ from MAFC_Operator import Operator, operatorType, outputType
 class Groupby(Operator):
 
     def __init__(self):
-        self.data = {}
+        pass
 
-    def generateName(self,sourcecolumns,targetcolumn):
+    def generateName(self, sourcecolumns, targetcolumn):
         Sname = "Source("
         for sc in sourcecolumns:
             sname = sc['name']

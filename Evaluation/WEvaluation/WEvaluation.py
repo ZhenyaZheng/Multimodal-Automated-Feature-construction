@@ -66,6 +66,8 @@ class WEvaluation(Evaluation):
 
     def runClassifier(self, classifiername, datadict):
         try:
+            if theproperty.dataframe == "dask":
+                client = Client()
             copydata = datadict["data"].copy()
             y = datadict["target"]
             if y.name in copydata.columns:
@@ -74,21 +76,30 @@ class WEvaluation(Evaluation):
                 if copydata[name].dtype not in ["int32", "int64", "float32", "float64", "bool"]:
                     del copydata[name]
             model = self.getClassifier(classifiername)
-            client = Client()
+            res = None
             X_train, X_test, y_train, y_test = train_test_split(copydata, y, test_size=0.3, shuffle=False)
             #lens = (len(copydata), len(X_train), len(X_test), len(y_train), len(y_test))
-            clf = ParallelPostFit(model, scoring="r2")
-            clf.fit(X_train, y_train)
-            y_pred = clf.predict(X_test)
+            if theproperty.dataframe == "dask":
+                clf = ParallelPostFit(model, scoring="r2")
+                clf.fit(X_train, y_train)
+                y_pred = clf.predict(X_test)
             #y_pred_proba = clf.predict_proba(X_test)
-            y_p = y_pred.compute()
-            y_t = y_test.compute().values
+                y_p = y_pred.compute()
+                y_t = y_test.compute().values
+            elif theproperty.dataframe == "pandas":
+                model.fit(X_train, y_train)
+                y_p = model.predict(X_test)
+                y_t = y_test.values
             #y_t = [val[1] for val in y_t]
-            client.close()
-            return (y_t, y_p)
+            res = (y_t, y_p)
+
         except Exception as ex:
             logger.Error(f"runclassifier error{ex}", ex)
-            return None
+
+        finally:
+            if theproperty.dataframe == "dask":
+                client.close()
+            return res
 
     def calculateAUC(self, evaluation):
         if evaluation is None:
@@ -103,7 +114,7 @@ class WEvaluation(Evaluation):
                 auc = roc_auc_score(evaluation[0], evaluation[1])
             return auc
         except ValueError as ex:
-            logger.Error(f"calculateAUC error{ex}", ex)
+            logger.Error(f"calculateAUC error {ex}", ex)
             return 0
 
     def calculateLoss(self, evaluation):

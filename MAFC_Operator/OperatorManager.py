@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 from MAFC_Operator.Operators import Operators
 from logger.logger import logger
-from parallel import parallel
+from parallel import parallel, MyThreadPool
 from properties.properties import theproperty
 import pandas as pd
 from MAFC_Operator.ColumnInfo import ColumnInfo
@@ -45,25 +45,34 @@ class OperatorManager:
         :param os:Operators
         :return: [values]
         '''
-        operator = ops.getOperator()
-        scdict = None
-        if ops.sourceColumns is not None:
-            scdict = [{"name": sc.getName(), "type": sc.getType()} for sc in ops.sourceColumns]
-        tcdict = None
-        if ops.targetColumns is not None:
-            tcdict = [{"name": tc.getName(), "type": tc.getType()} for tc in ops.targetColumns]
-        operator.processTrainingSet(data, scdict, tcdict)
-        newcolumn = operator.generateColumn(data, scdict, tcdict)
-        newcolumndata = newcolumn["data"].fillna(0)
+        try:
+            operator = ops.getOperator()
+            scdict = []
+            if ops.sourceColumns is not None:
+                scdict = [{"name": sc.getName(), "type": sc.getType()} for sc in ops.sourceColumns]
+            tcdict = []
+            if ops.targetColumns is not None:
+                tcdict = [{"name": tc.getName(), "type": tc.getType()} for tc in ops.targetColumns]
+            operator.processTrainingSet(data, scdict, tcdict)
+            newcolumn = operator.generateColumn(data, scdict, tcdict)
+            if newcolumn["data"] is None:
+                logger.Info(f"{operator.getName()} generateColumn is None!")
+            else:
+                newcolumndata = newcolumn["data"].fillna(0)
 
-        if needcompute == True:
-            newcolumndata = newcolumndata.compute()
-        if ops.getType() == outputType.Discrete:
-            lensofvalues = ops.getNumofBins()
-            columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns, operator, ops.getName(), False, ops.getType(), lensofvalues)
-        else:
-            columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns, operator, ops.getName(), False, ops.getType())
-        return [ops.getName(), newcolumndata, columninfo]
+            if theproperty.dataframe != "dask":
+                needcompute = False
+            if needcompute == True:
+                newcolumndata = newcolumndata.compute()
+            if ops.getType() == outputType.Discrete:
+                lensofvalues = ops.getNumofBins()
+                columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns, operator, ops.getName(), False, ops.getType(), lensofvalues)
+            else:
+                columninfo = ColumnInfo(ops.sourceColumns, ops.targetColumns, operator, ops.getName(), False, ops.getType())
+            return [ops.getName(), newcolumndata, columninfo]
+        except Exception as ex:
+            logger.Error(f"generateColumn error: {ops.getOperator().getName()} , {ex}", ex)
+            return None
 
 
     def GenerateAddColumnToData(self, datadict, operators):
@@ -72,46 +81,56 @@ class OperatorManager:
         :param operators: [Operators]
         :return: Null
         '''
-        lock = threading.Lock()
-        def myfunc(ops, datadict):
-            newcolumn = self.generateColumn(datadict["data"], ops)
-            lock.acquire()
-            self.addColumn(datadict, newcolumn)
-            lock.release()
+        try:
+            lock = threading.Lock()
+            def myfunc(ops, **kwargs):
+                #logger.Info(f'{ops.getName()} is start work')
+                newcolumn = self.generateColumn(kwargs['datadict']["data"], ops)
+                if newcolumn is None:
+                    return
+                lock.acquire()
+                self.addColumn(kwargs['datadict'], newcolumn)
+                lock.release()
 
-        threadnums = theproperty.thread
-        if threadnums == 1:
-            osnums = len(operators)
-            num = 1
-            for ops in operators:
-                if num % 100 == 0:
-                    print("this is ", num, " / ", osnums, " and time is ", datetime.datetime.now())
-                num += 1
-                newcolumn = self.generateColumn(datadict["data"], ops)
-                self.addColumn(datadict, newcolumn)
-        else:
-            pool = ThreadPoolExecutor(max_workers=threadnums)
-            maxops = len(operators)
-            iterops = 0
-            iterthread = 0
-            threadlist = []
-            for _ in range(min(threadnums, maxops)):
-                threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
-                iterops += 1
-            while iterops < maxops:
-                for _ in range(threadnums):
-                    if iterops >= maxops:
-                        break
-                    for _ in as_completed([threadlist[iterthread]]):
-                        threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
-                        iterops += 1
-                    iterthread += 1
-                    if iterthread % 100 == 0:
-                        logger.Info("this is " + str(iterthread) + " / " + str(maxops) + " and time is " + str(datetime.datetime.now()))
-            while iterthread < maxops:
-                for _ in as_completed([threadlist[iterthread]]):
-                    iterthread += 1
-        logger.Info("GenerateAddColumnToData complete")
+            threadnums = theproperty.thread
+            if threadnums == 1:
+                osnums = len(operators)
+                num = 1
+                for ops in operators:
+                    if num % 100 == 0:
+                        print("this is ", num, " / ", osnums, " and time is ", datetime.datetime.now())
+                    num += 1
+                    newcolumn = self.generateColumn(datadict["data"], ops)
+                    if newcolumn is None:
+                        continue
+                    self.addColumn(datadict, newcolumn)
+            else:
+                threadpool = MyThreadPool(threadnums, operators)
+                threadpool.run(myfunc, datadict=datadict)
+                # pool = ThreadPoolExecutor(max_workers=threadnums)
+                # maxops = len(operators)
+                # iterops = 0
+                # iterthread = 0
+                # threadlist = []
+                # for _ in range(min(threadnums, maxops)):
+                #     threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
+                #     iterops += 1
+                # while iterops < maxops:
+                #     for _ in range(threadnums):
+                #         if iterops >= maxops:
+                #             break
+                #         for _ in as_completed([threadlist[iterthread]]):
+                #             threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
+                #             iterops += 1
+                #         iterthread += 1
+                #         if iterthread % 100 == 0:
+                #             logger.Info("this is " + str(iterthread) + " / " + str(maxops) + " and time is " + str(datetime.datetime.now()))
+                # while iterthread < maxops:
+                #     for _ in as_completed([threadlist[iterthread]]):
+                #         iterthread += 1
+            logger.Info("GenerateAddColumnToData complete")
+        except Exception as ex:
+            logger.Error(f"GenerateAddColumnToData error: {ex}", ex)
 
     def OtherOperator(self, data, operatorlist):
         '''
@@ -256,14 +275,14 @@ class OperatorManager:
         numOfThread = theproperty.thread
         count = 0
 
-        def myfunction(ops):
-
+        def myfunction(ops, **kwargs):
             try:
-                datacopy = copy.deepcopy(datadict)
+                datacopy = copy.deepcopy(kwargs['datadict'])
                 newcolumn = self.generateColumn(datacopy["data"], ops)
-                if newcolumn[1] is None or fevaluation is None:
+                if newcolumn is None or kwargs['fevaluation'] is None:
                     logger.Info("generate column or fevaluation error!")
-                newfevaluation = copy.deepcopy(fevaluation)
+                    return
+                newfevaluation = copy.deepcopy(kwargs['fevaluation'])
                 templist = [newcolumn]
                 newfevaluation.initFEvaluation(templist)
                 fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
@@ -275,14 +294,15 @@ class OperatorManager:
         if numOfThread == 1:
             for ops in operators:
                 try:
-                    if count >= 300:
-                        break
+                    # if count > 300:
+                    #     break
                     count += 1
                     if count % 100 == 0:
                         logger.Info("analyzed " + str(count) + " attributes, and time is " + str(datetime.datetime.now()))
                     newcolumn = self.generateColumn(datadict["data"], ops)
-                    if newcolumn[1] is None or fevaluation is None:
+                    if newcolumn is None or fevaluation is None:
                         logger.Info("generate column or fevaluation error!")
+                        continue
                     datacopy = copy.deepcopy(datadict)
                     newfevaluation = copy.deepcopy(fevaluation)
                     self.addColumn(datacopy, newcolumn)
@@ -294,5 +314,7 @@ class OperatorManager:
                     logger.Error(f"calculateFsocre error!{ex}")
                     ops.setFScore(0.0)
         else:
-            parallel.ParallelForEachShare(myfunction, [ops for ops in operators])
+            #parallel.ParallelForEachShare(myfunction, [ops for ops in operators])
+            threadpool = MyThreadPool(theproperty.thread, operators, theproperty.maxFEvaluationnums)
+            threadpool.run(myfunction, datadict=datadict, fevaluation=fevaluation)
 
