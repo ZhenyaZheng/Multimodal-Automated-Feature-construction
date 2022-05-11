@@ -116,7 +116,6 @@ def getEvaluation(name, datadict):
         logger.Error("No this Evaluation" + name)
     return evaluation
 
-
 def Merge_Data(image_data, text_data, tab_data):
     '''
     :param image_data:dask.dataframe.Dataframe
@@ -200,6 +199,7 @@ def getDatadict(dataset, operatorbyself=None, operatorignore=None):
     if theproperty.dataframe == "dask":
         image_fc, text_fc = saveData(image_fc, text_fc)
     data = Merge_Data(image_fc, text_fc, dataset.data_tabular)
+    saveDateFrame(data, theproperty.datasetname + "original")
     #textview = text_fc.compute()
     #imageview = image_fc.compute()
     #dataview = data.compute()
@@ -249,13 +249,17 @@ def getNowTimeStr():
     thetime = str(datetime.datetime.now()).replace(" ", "").replace("-", "").replace(":", "").replace(".", "")
     return thetime
 
-def saveDateFrame(dataframe: dd.DataFrame, name: str = "dataset"):
+def saveDateFrame(dataframe: dd.DataFrame, name: str = theproperty.datasetname):
     if dataframe is not None:
-        serialize(theproperty.temppath + name + getNowTimeStr(), dataframe)
-    newdir = theproperty.temppath + "dataframe" + getNowTimeStr()
-    os.mkdir(newdir)
-    if dataframe is not None:
-        dataframe.to_csv(newdir, index=False)
+        serialize(theproperty.resultfilepath + theproperty.dataframe + name + ".datatemp", dataframe)
+        newdir = theproperty.resultfilepath + theproperty.dataframe + name
+        if os.path.isdir(newdir) == False:
+            os.mkdir(newdir)
+
+        if theproperty.dataframe == "dask":
+            dataframe.to_csv(newdir, index=False)
+        elif theproperty.dataframe == "pandas":
+            dataframe.to_csv(newdir + os.path.sep + theproperty.dataframe + name + ".csv", index=False)
 
 def pddMerge(data1: dd.DataFrame, data2: dd.DataFrame):
     '''

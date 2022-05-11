@@ -1,3 +1,4 @@
+import copy
 import os
 from datetime import datetime
 import numpy as np
@@ -17,13 +18,13 @@ class WEvaluation(Evaluation):
     def __init__(self):
         super(WEvaluation, self).__init__()
 
-    def evaluationAsave(self, currentresult: ClassificationResults, iteration=0, addatts:list[Operators]=None, nums=0, newfile=True):
+    def evaluationAsave(self, currentresult: ClassificationResults, iteration=0, addatts:list[Operators]=None, nums=0, newfile=True, istest = False):
         try:
             sb = ''
             if newfile:
                 sb += "Iteration,Added_Attributes,LogLoss,AUC,F1Score"
                 sb += ",Chosen_Attributes_FScore,Chosen_Attributes_WScore,Num_Of_Evaluated_Attributes_In_Iteration"
-                sb += "Iteration_Completion_time"
+                sb += ",Iteration_Completion_time"
                 sb += os.linesep
 
             sb += str(iteration) + ","
@@ -31,11 +32,12 @@ class WEvaluation(Evaluation):
             if addatts is not None:
                 for ats in addatts:
                     sb += ats.getName()
-                    sb += ","
+                    sb += "+"
             sb += ']",'
             sb += str(currentresult.getLogLoss()) + ","
             sb += str(currentresult.getAuc()) + ','
             sb += str(currentresult.getFMeasureValues()) + ","
+            sb += '"['
             if addatts is not None:
                 for ats in addatts:
                     sb += str(ats.getFScore())
@@ -45,23 +47,30 @@ class WEvaluation(Evaluation):
                     sb += str(ats.getWScore())
                     sb += ","
                 sb += ']",'
+            else:
+                sb += ']","[]",'
             sb += str(nums) + ","
             date = datetime.now()
-            sb += date.__str__()
+            sb += date.__str__().replace(" ", "")
 
-
-            filepath = theproperty.resultfilepath + theproperty.datasetname + ".csv"
+            if istest == False:
+                filepath = theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname + "result.csv";
+            else:
+                filepath = theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname + "testresult.csv";
             if newfile:
                 fw = open(filepath, "w")
             else:
                 fw = open(filepath, "a")
             fw.write(sb + "\n")
-            fw.close()
+
         except Exception as ex:
             logger.Error("IOException: {ex}", ex)
+        finally:
+            fw.close()
 
     def ProduceClassifications(self, dataset, classifier):
-        classificationresult = self.getClassifications(dataset, classifier)
+        datacopy = copy.deepcopy(dataset)
+        classificationresult = self.getClassifications(datacopy, classifier)
         return classificationresult
 
     def runClassifier(self, classifiername, datadict):
@@ -77,7 +86,7 @@ class WEvaluation(Evaluation):
                     del copydata[name]
             model = self.getClassifier(classifiername)
             res = None
-            X_train, X_test, y_train, y_test = train_test_split(copydata, y, test_size=0.3, shuffle=False)
+            X_train, X_test, y_train, y_test = train_test_split(copydata, y, test_size=0.3, random_state=theproperty.randomseed, shuffle=False)
             #lens = (len(copydata), len(X_train), len(X_test), len(y_train), len(y_test))
             if theproperty.dataframe == "dask":
                 clf = ParallelPostFit(model, scoring="r2")
@@ -141,8 +150,8 @@ class WEvaluation(Evaluation):
             logger.Error(f"calculateFsocre error{ex}", ex)
             return 0
 
-    def getClassifications(self, dataset, classifier):
-        evaluations = self.runClassifier(classifier, dataset)
+    def getClassifications(self, datadict, classifier):
+        evaluations = self.runClassifier(classifier, datadict)
         auc = self.calculateAUC(evaluations)
         loss = self.calculateLoss(evaluations)
         fmeasurevalue = self.calculateFsocre(evaluations)

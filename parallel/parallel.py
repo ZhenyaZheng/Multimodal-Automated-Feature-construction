@@ -16,7 +16,7 @@ def ParallelForEachShare(function, listofargs):
     return res
 
 class MyThreadPool:
-    def __init__(self, threadnums, operators, maxops=0):
+    def __init__(self, threadnums, operators, maxops=0, opername=None, infosep=1000):
         self.operators = operators
         self.threadnums = threadnums
         self.pool = ThreadPoolExecutor(max_workers=threadnums)
@@ -27,6 +27,8 @@ class MyThreadPool:
         self.iterops = 0
         self.iterthread = 0
         self.threadlist = []
+        self.opername = opername
+        self.infosep = infosep
 
     def run(self, myfunc, **kwargs):
         for _ in range(min(self.threadnums, self.maxops)):
@@ -40,9 +42,9 @@ class MyThreadPool:
                     self.threadlist.append(self.pool.submit(myfunc, self.operators[self.iterops], **kwargs))
                     self.iterops += 1
                 self.iterthread += 1
-                if self.iterthread % 100 == 0:
+                if self.iterthread % self.infosep == 0:
                     logger.Info(
-                        "this is " + str(self.iterthread) + " / " + str(self.maxops) + " and time is " + str(datetime.datetime.now()))
+                        self.opername + " this is " + str(self.iterthread) + " / " + str(self.maxops) + " and time is " + str(datetime.datetime.now()))
         while self.iterthread < self.maxops:
             for _ in as_completed([self.threadlist[self.iterthread]]):
                 self.iterthread += 1

@@ -23,10 +23,29 @@ class OperatorManager:
         :param candidateatt:(name,data)
         :return:
         '''
-        if candidateatt is None:
+        if candidateatt is None or candidateatt[1] is None:
             return
-        datadict["data"][candidateatt[0]] = candidateatt[1]
-        datadict["Info"].append(candidateatt[2])
+        try:
+            # if candidateatt[0] in datadict['data'].columns:
+            #     logger.Info(f"{candidateatt[0]} have existed in data")
+            datadict["data"][candidateatt[0]] = candidateatt[1]
+            if candidateatt[0] in datadict["data"].columns:
+                datadict["Info"].append(candidateatt[2])
+            else:
+                pass
+                #logger.Info(f"{candidateatt[0]} addcolumn isn't successful")
+        except Exception as ex:
+            logger.Error(f"addColumn Error: {ex}", ex)
+
+    def deleteColumn(self, datadict, dellist=None):
+        try:
+            if dellist is not None:
+               del datadict["data"][dellist]
+            listname = datadict['data'].columns
+            newinfo = list(set(filter(lambda info: info.getName() in listname, datadict["Info"])))
+            datadict['Info'] = newinfo
+        except Exception as ex:
+            logger.Error(f"deleteColumn error: {ex}", ex)
 
     def UnaryOperator(self, data,unaryoperatorlist):
         '''
@@ -88,9 +107,10 @@ class OperatorManager:
                 newcolumn = self.generateColumn(kwargs['datadict']["data"], ops)
                 if newcolumn is None:
                     return
-                lock.acquire()
+                kwargs['lock'].acquire()
                 self.addColumn(kwargs['datadict'], newcolumn)
-                lock.release()
+                #logger.Info(f"{newcolumn[0]} add successful")
+                kwargs['lock'].release()
 
             threadnums = theproperty.thread
             if threadnums == 1:
@@ -105,29 +125,9 @@ class OperatorManager:
                         continue
                     self.addColumn(datadict, newcolumn)
             else:
-                threadpool = MyThreadPool(threadnums, operators)
-                threadpool.run(myfunc, datadict=datadict)
-                # pool = ThreadPoolExecutor(max_workers=threadnums)
-                # maxops = len(operators)
-                # iterops = 0
-                # iterthread = 0
-                # threadlist = []
-                # for _ in range(min(threadnums, maxops)):
-                #     threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
-                #     iterops += 1
-                # while iterops < maxops:
-                #     for _ in range(threadnums):
-                #         if iterops >= maxops:
-                #             break
-                #         for _ in as_completed([threadlist[iterthread]]):
-                #             threadlist.append(pool.submit(myfunc, operators[iterops], datadict))
-                #             iterops += 1
-                #         iterthread += 1
-                #         if iterthread % 100 == 0:
-                #             logger.Info("this is " + str(iterthread) + " / " + str(maxops) + " and time is " + str(datetime.datetime.now()))
-                # while iterthread < maxops:
-                #     for _ in as_completed([threadlist[iterthread]]):
-                #         iterthread += 1
+                threadpool = MyThreadPool(threadnums, operators, opername="AddData")
+                threadpool.run(myfunc, datadict=datadict, lock=lock)
+
             logger.Info("GenerateAddColumnToData complete")
         except Exception as ex:
             logger.Error(f"GenerateAddColumnToData error: {ex}", ex)
@@ -143,7 +143,7 @@ class OperatorManager:
         logger.Info("OtherOperator complete")
         return operators
 
-    def getCombination(self, attributes:list, numsofcombination):
+    def getCombination(self, attributes: list, numsofcombination):
         lengthofattribute = len(attributes)
         comb = Combination(lengthofattribute, numsofcombination)
         attributecombination = []
@@ -233,6 +233,8 @@ class OperatorManager:
         theoperators = []
         i = maxcombinations
         while i > 0:
+            if len(theoperators) > theproperty.maxoperators:
+                break
             attributecombination = self.getCombination(data["Info"], i)
             for ac in attributecombination:
                 if len(includeattributes) > 0:
@@ -315,6 +317,6 @@ class OperatorManager:
                     ops.setFScore(0.0)
         else:
             #parallel.ParallelForEachShare(myfunction, [ops for ops in operators])
-            threadpool = MyThreadPool(theproperty.thread, operators, theproperty.maxFEvaluationnums)
+            threadpool = MyThreadPool(theproperty.thread, operators, theproperty.maxFEvaluationnums, opername="FEvaluation")
             threadpool.run(myfunction, datadict=datadict, fevaluation=fevaluation)
 

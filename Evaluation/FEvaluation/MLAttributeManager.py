@@ -114,7 +114,7 @@ class MLAttributeManager:
         :return:[{}]
         '''
         try:
-            trainsetattspath = theproperty.resultfilepath + datadict["data"].name + "candidateattslist"
+            trainsetattspath = theproperty.resultfilepath + datadict["data"].name + "_candidateattslist"
             if os.path.isfile(trainsetattspath):
                 return deserialize(trainsetattspath)
             candidateattslist = []
@@ -173,7 +173,7 @@ class MLAttributeManager:
 
                 if numofthread > 1:
                     #parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
-                    threadpool = parallel.MyThreadPool(theproperty.thread, otheroperators)
+                    threadpool = parallel.MyThreadPool(theproperty.thread, otheroperators, opername="MLAttribute")
                     threadpool.run(myfunction, datadict=datadict, evaluator=evaluator, classifier=classifier,
                                    originalAUC=originalAUC, datasetatts=datasetatts, candidateattslist=candidateattslist)
                 else:
@@ -214,7 +214,8 @@ class MLAttributeManager:
             logger.Error(f'Failed in func "generateTrainsetAtts" with exception: {ex}')
 
         finally:
-            serialize(theproperty.resultfilepath + datadict["data"].name + "candidateattslist", candidateattslist)
+            if os.path.isfile(trainsetattspath) == False:
+                serialize(trainsetattspath, candidateattslist)
             return candidateattslist
 
     def generateValuesTabular(self, dataattsvalues):

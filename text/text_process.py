@@ -31,7 +31,7 @@ def process(textdata, opertorslist=None, ingorelist=None):
     '''
     pdata = pd.DataFrame()
     if theproperty.dataframe == "dask":
-        data = dd.from_pandas(pdata, npartitions=10)
+        data = dd.from_pandas(pdata, npartitions=1)
     elif theproperty.dataframe == "pandas":
         data = pdata
     operslist : list[TextOperator] = getOperator(opertorslist, ingorelist)

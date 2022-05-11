@@ -1,14 +1,17 @@
 import copy
+import numpy
 import numpy as np
 import pandas as pd
 import scipy
 import scipy.stats
 from Evaluation.FEvaluation.AttributeInfo import AttributeInfo
 from Evaluation.WEvaluation.AucWrapperEvaluation import AucWrapperEvaluation
+from MAFC_Operator.ColumnInfo import ColumnInfo
 from MAFC_Operator.operator_base import outputType
 from MAFC_Operator.Unary.discretizer import Discretizer
 from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
 from logger.logger import logger
+from mytime import getNowTime
 from properties.properties import theproperty
 from Evaluation.FEvaluation.StatisticOperation import StatisticOperation
 
@@ -16,60 +19,60 @@ class DatasetAttributes:
 
     def __init__(self):
         #   数据集的一些基本特征
-        self.numOfInstances: float
-        self.numOfFeatures: float
-        self.numOfNumericAttributes: float
-        self.numOfDiscreteAttributes: float
-        self.ratioOfNumericAttributes: float
-        self.ratioOfDiscreteAttributes: float
+        self.numOfInstances: float = 0.0
+        self.numOfFeatures: float = 0.0
+        self.numOfNumericAttributes: float = 0.0
+        self.numOfDiscreteAttributes: float = 0.0
+        self.ratioOfNumericAttributes: float = 0.0
+        self.ratioOfDiscreteAttributes: float = 0.0
         
 
         # 离散特征
-        self.maxNumberOfDiscreteValuesPerAttribute: float
-        self.minNumberOfDiscreteValuesPerAttribute: float
-        self.avgNumOfDiscreteValuesPerAttribute: float
-        self.stdNumOfDiscreteValuesPerAttribute: float
+        self.maxNumberOfDiscreteValuesPerAttribute: float = 0.0
+        self.minNumberOfDiscreteValuesPerAttribute: float = 0.0
+        self.avgNumOfDiscreteValuesPerAttribute: float = 0.0
+        self.stdNumOfDiscreteValuesPerAttribute: float = 0.0
 
         # 数据集的统计学特征
-        self.FMeasureValues: float
-        self.logLossValues: float
-        self.aucValues: float
+        self.FMeasureValues: float = 0.0
+        self.logLossValues: float = 0.0
+        self.aucValues: float = 0.0
 
         # 交叉熵信息
-        self.maxIGVal: float
-        self.minIGVal: float
-        self.avgIGVal: float
-        self.stdIGVal: float
+        self.maxIGVal: float = 0.0
+        self.minIGVal: float = 0.0
+        self.avgIGVal: float = 0.0
+        self.stdIGVal: float = 0.0
 
-        self.discreteAttsMaxIGVal: float
-        self.discreteAttsMinIGVal: float
-        self.discreteAttsAvgIGVal: float
-        self.discreteAttsStdIGVal: float
+        self.discreteAttsMaxIGVal: float = 0.0
+        self.discreteAttsMinIGVal: float = 0.0
+        self.discreteAttsAvgIGVal: float = 0.0
+        self.discreteAttsStdIGVal: float = 0.0
 
-        self.numericAttsMaxIGVal: float
-        self.numericAttsMinIGVal: float
-        self.numericAttsAvgIGVal: float
-        self.numericAttsStdIGVal: float
+        self.numericAttsMaxIGVal: float = 0.0
+        self.numericAttsMinIGVal: float = 0.0
+        self.numericAttsAvgIGVal: float = 0.0
+        self.numericAttsStdIGVal: float = 0.0
 
         # 相关性信息
-        self.maxPairedTTestValueForNumericAttributes: float
-        self.minPairedTTestValueForNumericAttributes: float
-        self.avgPairedTTestValueForNumericAttributes: float
-        self.stdPairedTTestValueForNumericAttributes: float
+        self.maxPairedTTestValueForNumericAttributes: float = 0.0
+        self.minPairedTTestValueForNumericAttributes: float = 0.0
+        self.avgPairedTTestValueForNumericAttributes: float = 0.0
+        self.stdPairedTTestValueForNumericAttributes: float = 0.0
 
-        self.maxChiSquareValueForDiscreteAttributes: float
-        self.minChiSquareValueForDiscreteAttributes: float
-        self.avgChiSquareValueForDiscreteAttributes: float
-        self.stdChiSquareValueForDiscreteAttributes: float
+        self.maxChiSquareValueForDiscreteAttributes: float = 0.0
+        self.minChiSquareValueForDiscreteAttributes: float = 0.0
+        self.avgChiSquareValueForDiscreteAttributes: float = 0.0
+        self.stdChiSquareValueForDiscreteAttributes: float = 0.0
 
-        self.maxChiSquareValueForDiscreteAndDiscreteAttributes: float
-        self.minChiSquareValueForDiscreteAndDiscreteAttributes: float
-        self.avgChiSquareValueForDiscreteAndDiscreteAttributes: float
-        self.stdChiSquareValueForDiscreteAndDiscreteAttributes: float
+        self.maxChiSquareValueForDiscreteAndDiscreteAttributes: float = 0.0
+        self.minChiSquareValueForDiscreteAndDiscreteAttributes: float = 0.0
+        self.avgChiSquareValueForDiscreteAndDiscreteAttributes: float = 0.0
+        self.stdChiSquareValueForDiscreteAndDiscreteAttributes: float = 0.0
 
         #
-        self.discreteAttributesList: list
-        self.numericAttributesList: list
+        self.discreteAttributesList: list = []
+        self.numericAttributesList: list = []
 
         self.stcop = StatisticOperation()
     def getDatasetBasedFeature(self, datadict, classifier):
@@ -80,14 +83,15 @@ class DatasetAttributes:
         :return:dict
         '''
         try:
+            #logger.Info("getDatasetBasedFeature " + getNowTime())
             self.processGeneralDatasetInfo(datadict)
-
+            #logger.Info("processGeneralDatasetInfo " + getNowTime())
             self.processInitialEvaluationInformation(datadict, classifier)
-
+            #logger.Info("processInitialEvaluationInformation " + getNowTime())
             self.processEntropyBasedMeasures(datadict)
-
+            #logger.Info("processEntropyBasedMeasures " + getNowTime())
             self.processAttributesStatisticalTests(datadict)
-
+            #logger.Info("processAttributesStatisticalTests " + getNowTime())
         except Exception as ex:
             logger.Error(f'Failed in func "getDatasetBasedFeature" with exception: {ex}')
             #return None
@@ -102,10 +106,6 @@ class DatasetAttributes:
         '''
         self.numOfInstances = len(datadict["data"])
         self.numOfFeatures = len(datadict["data"].columns)
-        self.numOfNumericAttributes = 0
-        self.numOfDiscreteAttributes = 0
-        self.numericAttributesList = []
-        self.discreteAttributesList = []
 
         for clin in datadict["Info"]:
             if clin.getType() == outputType.Numeric:
@@ -134,12 +134,6 @@ class DatasetAttributes:
             self.stdNumOfDiscreteValuesPerAttribute = np.asarray(numOfValuesPerDiscreteAttribute,
                                                                  dtype=np.float32).std()
 
-
-        else:
-            self.maxNumberOfDiscreteValuesPerAttribute = 0
-            self.minNumberOfDiscreteValuesPerAttribute = 0
-            self.avgNumOfDiscreteValuesPerAttribute = 0
-            self.stdNumOfDiscreteValuesPerAttribute = 0
 
     def processInitialEvaluationInformation(self, datadict, classifier: str):
         '''
@@ -216,22 +210,14 @@ class DatasetAttributes:
             self.discreteAttsMinIGVal = np.min(IGScoresPerDiscreteColumnIndex)
             self.discreteAttsAvgIGVal = np.mean(IGScoresPerDiscreteColumnIndex)
             self.discreteAttsStdIGVal = np.std(IGScoresPerDiscreteColumnIndex)
-        else:
-            self.discreteAttsMaxIGVal = 0
-            self.discreteAttsMinIGVal = 0
-            self.discreteAttsAvgIGVal = 0
-            self.discreteAttsStdIGVal = 0
+
 
         if IGScoresPerNumericColumnIndex.shape[0] > 0:
             self.numericAttsMaxIGVal = np.max(IGScoresPerNumericColumnIndex)
             self.numericAttsMinIGVal = np.min(IGScoresPerNumericColumnIndex)
             self.numericAttsAvgIGVal = np.mean(IGScoresPerNumericColumnIndex)
             self.numericAttsStdIGVal = np.std(IGScoresPerNumericColumnIndex)
-        else:
-            self.numericAttsMaxIGVal = 0
-            self.numericAttsMinIGVal = 0
-            self.numericAttsAvgIGVal = 0
-            self.numericAttsStdIGVal = 0
+
 
     def processAttributesStatisticalTests(self, datadict):
         '''
@@ -239,103 +225,102 @@ class DatasetAttributes:
         :param datadict:
         :return:
         '''
-        pairedTTestValuesList = []
-        for i in range(len(self.numericAttributesList) - 1):
-            for j in range(i + 1, len(self.numericAttributesList)):
-                if i != j:
-                    if theproperty.dataframe == "dask":
-                        listi = datadict['data'][self.numericAttributesList[i].getName()].values.compute()
-                        listj = datadict['data'][self.numericAttributesList[j].getName()].values.compute()
-                    elif theproperty.dataframe == "pandas":
-                        listi = datadict['data'][self.numericAttributesList[i].getName()].values
-                        listj = datadict['data'][self.numericAttributesList[j].getName()].values
-                    else:
-                        logger.Info(f"no {theproperty.dataframe} can use")
-                    tstat, pval = scipy.stats.ttest_ind(listi, listj)
+        try:
+            pairedTTestValuesList = []
+            for i in range(len(self.numericAttributesList) - 1):
+                for j in range(i + 1, len(self.numericAttributesList)):
+                    if i != j:
+                        if theproperty.dataframe == "dask":
+                            listi = datadict['data'][self.numericAttributesList[i].getName()].values.compute()
+                            listj = datadict['data'][self.numericAttributesList[j].getName()].values.compute()
+                        elif theproperty.dataframe == "pandas":
+                            listi = np.array(datadict['data'][self.numericAttributesList[i].getName()].values)
+                            listj = np.array(datadict['data'][self.numericAttributesList[j].getName()].values)
+                        else:
+                            logger.Info(f"no {theproperty.dataframe} can use")
+                        tstat, pval = scipy.stats.ttest_ind(listi, listj)
 
-                    tTestVal = abs(tstat)
-                    if not np.isnan(tTestVal) and not np.isinf(tTestVal):
-                        pairedTTestValuesList.append(tTestVal)
+                        tTestVal = abs(tstat)
+                        if not np.isnan(tTestVal) and not np.isinf(tTestVal):
+                            pairedTTestValuesList.append(tTestVal)
 
-        if len(pairedTTestValuesList) > 0:
-            self.maxPairedTTestValueForNumericAttributes = max(pairedTTestValuesList)
-            self.minPairedTTestValueForNumericAttributes = min(pairedTTestValuesList)
-            self.avgPairedTTestValueForNumericAttributes = np.average(pairedTTestValuesList)
-            self.stdPairedTTestValueForNumericAttributes = np.std(pairedTTestValuesList)
+            if len(pairedTTestValuesList) > 0:
+                self.maxPairedTTestValueForNumericAttributes = max(pairedTTestValuesList)
+                self.minPairedTTestValueForNumericAttributes = min(pairedTTestValuesList)
+                self.avgPairedTTestValueForNumericAttributes = np.average(pairedTTestValuesList)
+                self.stdPairedTTestValueForNumericAttributes = np.std(pairedTTestValuesList)
 
-        else:
-            self.maxPairedTTestValueForNumericAttributes = 0
-            self.minPairedTTestValueForNumericAttributes = 0
-            self.avgPairedTTestValueForNumericAttributes = 0
-            self.stdPairedTTestValueForNumericAttributes = 0
 
-        chiSquaredTestValuesList = []
-        for i in range(len(self.discreteAttributesList) - 1):
-            for j in range(i + 1, len(self.discreteAttributesList)):
-                if i != j:
+            chiSquaredTestValuesList = []
+            for i in range(len(self.discreteAttributesList) - 1):
+                for j in range(i + 1, len(self.discreteAttributesList)):
+                    if i != j:
+                        #logger.Info(f"generateAtt Start :{getNowTime()}")
+                        counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], self.discreteAttributesList[i], self.discreteAttributesList[j])
+                        #logger.Info(f"generateAtt End :{getNowTime()}")
+                        if counts is None:
+                            continue
+                        #testVal = scipy.stats.chi2_contingency(counts)[0]
+                        #logger.Info(f"chisquare Start :{getNowTime()}")
+                        testVal = self.stcop.chisquare(counts)
+                        #logger.Info(f"chisquare End :{getNowTime()}")
+                        if not np.isnan(testVal) and not np.isinf(testVal):
+                            chiSquaredTestValuesList.append(testVal)
 
-                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], self.discreteAttributesList[i], self.discreteAttributesList[j])
-                    if counts is None:
-                        continue
-                    testVal = self.stcop.chisquare(counts)
-                    if not np.isnan(testVal) and not np.isinf(testVal):
-                        chiSquaredTestValuesList.append(testVal)
+            if len(chiSquaredTestValuesList) > 0:
+                self.maxChiSquareValueForDiscreteAttributes = np.max(chiSquaredTestValuesList)
+                self.minChiSquareValueForDiscreteAttributes = np.min(chiSquaredTestValuesList)
+                self.avgChiSquareValueForDiscreteAttributes = np.average(chiSquaredTestValuesList)
+                self.stdChiSquareValueForDiscreteAttributes = np.std(chiSquaredTestValuesList)
 
-        if len(chiSquaredTestValuesList) > 0:
-            self.maxChiSquareValueForDiscreteAttributes = max(chiSquaredTestValuesList)
-            self.minChiSquareValueForDiscreteAttributes = min(chiSquaredTestValuesList)
-            self.avgChiSquareValueForDiscreteAttributes = np.average(chiSquaredTestValuesList)
-            self.stdChiSquareValueForDiscreteAttributes = np.std(chiSquaredTestValuesList)
+            # 最后，我们将数字特征离散化，并进行额外的卡方评估
+            bins = theproperty.DiscretizerBinsNumber
+            discretizedColumns = []
+            for ci in self.numericAttributesList:
+                #logger.Info(f"Discretizer Start :{getNowTime()}")
+                erduo = Discretizer(bins)
+                tempColumnsList = []
+                tempColumnsList.append(ci)
+                sourceColumnslist = [{'name': tl.getName(), 'type': tl.getType()} for tl in tempColumnsList]
+                erduo.processTrainingSet(datadict['data'], sourceColumnslist, None)
+                discretizedAttribute = erduo.generateColumn(datadict['data'], sourceColumnslist, None)
 
-        else:
-            self.maxChiSquareValueForDiscreteAttributes = 0
-            self.minChiSquareValueForDiscreteAttributes = 0
-            self.avgChiSquareValueForDiscreteAttributes = 0
-            self.stdChiSquareValueForDiscreteAttributes = 0
+                if theproperty.dataframe == "dask":
+                    discretizedAttdata = np.array(discretizedAttribute['data'].values.compute())
 
-        # 最后，我们将数字特征离散化，并进行额外的卡方评估
-        bins = theproperty.DiscretizerBinsNumber
-        discretizedColumns = []
-        for ci in self.numericAttributesList:
-            erduo = Discretizer(bins)
-            tempColumnsList = []
-            tempColumnsList.append(ci)
-            sourceColumnslist = [{'name': tl.getName(), 'type': tl.getType()} for tl in tempColumnsList]
-            erduo.processTrainingSet(datadict['data'], sourceColumnslist, None)
-            discretizedAttribute = erduo.generateColumn(datadict['data'], sourceColumnslist, None)
-            if theproperty.dataframe == "dask":
-                discretizedAttdata = list(discretizedAttribute['data'].values.compute())
-            elif theproperty.dataframe == "pandas":
-                discretizedAttdata = list(discretizedAttribute['data'].values)
-            else:
-                logger.Info(f"no {theproperty.dataframe} can use")
-            discretizedColumns.append(discretizedAttdata)
+                elif theproperty.dataframe == "pandas":
+                    discretizedAttdata = np.array(discretizedAttribute['data'].values)
+                    #values = np.array(discretizedAttdata)
 
-        # 现在，我们将所有原始离散属性添加到此列表中，并再次运行卡方检验
-        discretizedColumns += self.discreteAttributesList
-        chiSquaredTestValuesList = []
-        for i in range(len(discretizedColumns) - 1):
-            for j in range(i + 1, len(discretizedColumns)):
-                if (i != j):
-                    counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], discretizedColumns[i], discretizedColumns[j])
-                    if counts is None:
-                        continue
-                    testVal = self.stcop.chisquare(counts)
-                    if not np.isnan(testVal) and not np.isinf(testVal):
-                        chiSquaredTestValuesList.append(testVal)
+                else:
+                    logger.Info(f"no {theproperty.dataframe} can use")
+                lenval = len(np.unique(discretizedAttdata))
+                if lenval > 1:
+                    discretizedColumns.append(discretizedAttdata)
+                #logger.Info(f"Discretizer End :{getNowTime()}")
 
-        if len(chiSquaredTestValuesList) > 0:
-            self.maxChiSquareValueForDiscreteAndDiscreteAttributes = max(chiSquaredTestValuesList)
-            self.minChiSquareValueForDiscreteAndDiscreteAttributes = min(chiSquaredTestValuesList)
-            self.avgChiSquareValueForDiscreteAndDiscreteAttributes = np.average(chiSquaredTestValuesList)
-            self.stdChiSquareValueForDiscreteAndDiscreteAttributes = np.std(chiSquaredTestValuesList)
-           
+            # 现在，我们将所有原始离散属性添加到此列表中，并再次运行卡方检验
+            discretizedColumns += self.discreteAttributesList
+            chiSquaredTestValuesList = []
+            for i in range(len(discretizedColumns) - 1):
+                for j in range(i + 1, len(discretizedColumns)):
+                    if i != j:
+                        counts = self.generateDiscreteAttributesCategoryIntersection(datadict['data'], discretizedColumns[i], discretizedColumns[j])
+                        if counts is None:
+                            continue
+                        testVal = self.stcop.chisquare(counts)
+                        #testVal = scipy.stats.chi2_contingency(counts)[0]
+                        if not np.isnan(testVal) and not np.isinf(testVal):
+                            chiSquaredTestValuesList.append(testVal)
 
-        else:
-            self.maxChiSquareValueForDiscreteAndDiscreteAttributes = 0
-            self.minChiSquareValueForDiscreteAndDiscreteAttributes = 0
-            self.avgChiSquareValueForDiscreteAndDiscreteAttributes = 0
-            self.stdChiSquareValueForDiscreteAndDiscreteAttributes = 0
+            if len(chiSquaredTestValuesList) > 0:
+                self.maxChiSquareValueForDiscreteAndDiscreteAttributes = np.max(chiSquaredTestValuesList)
+                self.minChiSquareValueForDiscreteAndDiscreteAttributes = np.min(chiSquaredTestValuesList)
+                self.avgChiSquareValueForDiscreteAndDiscreteAttributes = np.average(chiSquaredTestValuesList)
+                self.stdChiSquareValueForDiscreteAndDiscreteAttributes = np.std(chiSquaredTestValuesList)
+
+        except Exception as ex:
+            logger.Error(f"processAttributesStatisticalTests error: {ex}", ex)
 
 
     def generateDatasetAttributesMap(self):
@@ -417,7 +402,7 @@ class DatasetAttributes:
     def generateDiscreteAttributesCategoryIntersection(self, data, col1, col2, n: int = theproperty.DiscretizerBinsNumber, m: int = theproperty.DiscretizerBinsNumber):
         newcol1 = col1
         newcol2 = col2
-        if type(col1) != list:
+        if type(col1) == ColumnInfo:
             n = col1.getNumsOfUnique()
             if theproperty.dataframe == "dask":
                 newcol1 = data[col1.getName()].values.compute()
@@ -425,7 +410,7 @@ class DatasetAttributes:
                 newcol1 = data[col1.getName()].values
             else:
                 logger.Info(f"no {theproperty.dataframe} can use")
-        if type(col2) != list:
+        if type(col2) == ColumnInfo:
             m = col2.getNumsOfUnique()
             if theproperty.dataframe == "dask":
                 newcol2 = data[col2.getName()].values.compute()

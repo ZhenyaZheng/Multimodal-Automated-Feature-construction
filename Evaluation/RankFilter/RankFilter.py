@@ -1,6 +1,6 @@
 from MAFC_Operator.ColumnInfo import ColumnInfo
 from MAFC_Operator.Operators import Operators
-
+from properties.properties import theproperty
 
 class RankFilter:
     def __init__(self):
@@ -8,4 +8,5 @@ class RankFilter:
 
     def rankAndFilter(self, operatorslist: list[Operators], previousiterchosenatts: list[ColumnInfo] = None):
         operatorslist.sort(key=lambda ob: ob.getFScore(), reverse=True)
-        return operatorslist
+        newopertorslist = list(filter(lambda ops: ops.getFScore() > theproperty.fsocre, operatorslist))
+        return newopertorslist

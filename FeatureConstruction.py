@@ -77,20 +77,21 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
             try:
                 # 构造特征
                 # 应用聚集操作
+                logger.Info(f"it is iteration of : {iters} / {iternums}")
                 otheroperatorspath = theproperty.finalchosenopspath + theproperty.dataframe + datadict['data'].name + "otheroperators" + str(iters)
                 if os.path.isfile(otheroperatorspath):
                     otheroperators = deserialize(otheroperatorspath)
                 else:
-                    print(getNowTimeStr())
+                    #logger.Info(getNowTimeStr())
                     fevaluation.recalculateDatasetBasedFeatures(datasetcopy)
-                    print(getNowTimeStr())
+                    #logger.Info(getNowTimeStr())
                     otheroperators = om.OtherOperator(datasetcopy, otheroperator_list)
                     # 重新使用F计算分数
                     otheroperators = list(set(otheroperators) - set(finalchosenops))
                     om.reCalcFEvaluationScores(datasetcopy, otheroperators, fevaluation)
                     #排序
                     otheroperators = rankerFilter.rankAndFilter(otheroperators, columnaddpreiter)
-                    serialize(theproperty.finalchosenopspath + "otheroperators" + str(iters), otheroperators)
+                    serialize(otheroperatorspath, otheroperators)
                 evaluationatts = [0]
                 chosenoperators = None
                 toprankingoperators = []
@@ -100,15 +101,16 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
                 lock = threading.Lock()
                 def myevaluationfunc(oop, **kwargs):
                     try:
-                        kwargs['evaluationatts'][0] += 1
+
                         if oop.getFScore() is not None and oop.getFScore() >= theproperty.fsocre:
+                            kwargs['evaluationatts'][0] += 1
                             datacopy = copy.deepcopy(kwargs['datasetcopy'])
                             newcolumn = om.generateColumn(datacopy["data"], oop, False)
                             if newcolumn is None:
                                 return 0
                             wscore = kwargs['wevaluation'].produceScore(datacopy, kwargs['tempcurrentclassifications'], oop, newcolumn)
                             oop.setWScore(wscore)
-                            if 0 < wscore:
+                            if theproperty.wsocre <= wscore:
                                 lock.acquire()
                                 kwargs['toprankingoperators'].append(oop)
                                 lock.release()
@@ -128,7 +130,7 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
                                 wscore = wevaluation.produceScore(datacopy, tempcurrentclassifications, oop, newcolumn)
                                 oop.setWScore(wscore)
                                 evaluationatts += 1
-                                if 0 < wscore:
+                                if theproperty.wsocre <= wscore:
                                     logger.Info("chosen a operator :" + oop.getName())
                                     toprankingoperators.append(oop)
 
@@ -142,7 +144,7 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
 
                 else:
                     #paraevaluatedattrs = parallel.palallelForEach(myevaluationfunc, [oop for oop in otheroperators])
-                    threadpool = MyThreadPool(theproperty.thread, otheroperators)
+                    threadpool = MyThreadPool(theproperty.thread, otheroperators, opername="WEvaluation", infosep=100)
                     threadpool.run(myevaluationfunc, datasetcopy=datasetcopy, wevaluation=wevaluation, tempcurrentclassifications=tempcurrentclassifications,
                                    toprankingoperators=toprankingoperators, evaluationatts=evaluationatts)
                     #evaluationatts += len(paraevaluatedattrs)
@@ -156,9 +158,16 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
                         logger.Info("No attributes are chosen,iteration over!")
                         break
                 finalchosenops += chosenoperators
+                finalchosenopspath = theproperty.finalchosenopspath + theproperty.dataframe + \
+                                     datadict['data'].name + "_finalchosenops_" + str(iters)
+                serialize(finalchosenopspath, finalchosenops)
                 om.GenerateAddColumnToData(datasetcopy, chosenoperators)
+                om.deleteColumn(datasetcopy)
                 currentclassifications = wevaluation.ProduceClassifications(datasetcopy, theproperty.classifier)
                 wevaluation.evaluationAsave(currentclassifications, iters, chosenoperators, totalnumofwrapperevaluation, False)
+                finaldatapath = theproperty.finalchosenopspath + theproperty.dataframe + \
+                                     datadict['data'].name + "_data_" + str(iters)
+                serialize(finaldatapath, datasetcopy)
 
             except Exception as ex:
                 logger.Error(f"calculateWsocre while error!{ex}")
@@ -202,9 +211,9 @@ def _FC_(datadict, isiteration: bool = False, iternums: int = 1, operatorbyself:
             df = _FC_Iter_(datadict, unaryoperator_list, otheroperator_list, iternums)
     except Exception as ex:
         logger.Error(f'Failed in func "_FC_" with exception: {ex}')
+    finally:
         saveDateFrame(df, datadict["data"].name)
-
-    return df
+        return df
 
 def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: dict = None, operatorignore: dict = None):
     '''
@@ -225,10 +234,25 @@ def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: dic
     df = _FC_(datadict, isiteration, iternums, operatorbyself, operatorignore)
     return df
 
-def generateTestData(dataset):
-    datadict = getDatadict(dataset)
-    operators = deserialize(theproperty.finalchosenopspath)
+def generateTestData(dataset, datasettrainname=theproperty.datasetname):
+    datadictpath = theproperty.temppath + theproperty.dataframe + dataset.name + "testdatadict.temp"
+    if os.path.isfile(datadictpath):
+        datadict = deserialize(datadictpath)
+    else:
+        datadict = getDatadict(dataset)
+        serialize(datadictpath, datadict)
+    #datadict = getDatadict(dataset)
+    operators = deserialize(theproperty.finalchosenopspath + theproperty.dataframe + datasettrainname + "finalchosenops")
     om = OperatorManager()
+    #初始评估
+    wevaluation = AucWrapperEvaluation()
+    datacopy = copy.deepcopy(datadict)
+    classificationresult = wevaluation.getClassifications(datacopy, theproperty.classifier)
+    wevaluation.evaluationAsave(classificationresult, 0, istest=True)
     om.GenerateAddColumnToData(datadict, operators)
-    saveDateFrame(datadict["data"], datadict["data"].name)
+    datacopy = copy.deepcopy(datadict)
+    classificationresult = wevaluation.getClassifications(datacopy, theproperty.classifier)
+    wevaluation.evaluationAsave(classificationresult, 1, operators, len(operators), newfile=False, istest=True)
+    saveDateFrame(datadict["data"], theproperty.datasetname + "test")
+    return datadict["data"]
 

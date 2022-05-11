@@ -24,7 +24,7 @@ class InformationGainFilterEvaluator(FEvaluation):
             bins = 10
             flag = super(InformationGainFilterEvaluator, self).discretizeColumns(analyzedDatasets, bins)
             self.valuesPerKey = {}
-            X_train, X_test, y_train, y_test = train_test_split(analyzedDatasets["data"], analyzedDatasets["target"], test_size=0.3, shuffle=False)
+            X_train, X_test, y_train, y_test = train_test_split(analyzedDatasets["data"], analyzedDatasets["target"], random_state=theproperty.randomseed, test_size=0.3, shuffle=False)
 
             for cl in self.analycolumns:
                 if theproperty.dataframe == "dask":

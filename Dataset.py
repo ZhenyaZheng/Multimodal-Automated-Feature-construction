@@ -53,7 +53,7 @@ class Dataset:
         if theproperty.dataframe == "dask":
             text_data = dd.read_csv(text_path)
         elif theproperty.dataframe == "pandas":
-            text_data = pd.read_csv(text_path)
+            text_data = pd.read_csv(text_path, sep='\n')
         else:
             logger.Info("no " + theproperty.dataframe + " can use!")
 
