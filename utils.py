@@ -199,11 +199,12 @@ def getDatadict(dataset, operatorbyself=None, operatorignore=None):
     if theproperty.dataframe == "dask":
         image_fc, text_fc = saveData(image_fc, text_fc)
     data = Merge_Data(image_fc, text_fc, dataset.data_tabular)
-    saveDateFrame(data, theproperty.datasetname + "original")
+
     #textview = text_fc.compute()
     #imageview = image_fc.compute()
     #dataview = data.compute()
     datainfo = getInfo(data)
+    saveDateFrame(data, theproperty.datasetname + "original")
     datadict = {"data": data, "Info": datainfo}
     index = theproperty.targetindex
     datadict["target"] = datadict["data"].iloc[:, index]
@@ -251,8 +252,8 @@ def getNowTimeStr():
 
 def saveDateFrame(dataframe: dd.DataFrame, name: str = theproperty.datasetname):
     if dataframe is not None:
-        serialize(theproperty.resultfilepath + theproperty.dataframe + name + ".datatemp", dataframe)
-        newdir = theproperty.resultfilepath + theproperty.dataframe + name
+        #serialize(theproperty.resultfilepath + theproperty.dataframe + name + ".datatemp", dataframe)
+        newdir = theproperty.rootpath + theproperty.resultfilepath + theproperty.dataframe + name
         if os.path.isdir(newdir) == False:
             os.mkdir(newdir)
 

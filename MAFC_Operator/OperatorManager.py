@@ -94,7 +94,7 @@ class OperatorManager:
             return None
 
 
-    def GenerateAddColumnToData(self, datadict, operators):
+    def GenerateAddColumnToData(self, datadict, operators, isparallel=True):
         '''
         :param datadict:{"data":data,"Info":[ColumnInfo]}
         :param operators: [Operators]
@@ -113,12 +113,12 @@ class OperatorManager:
                 kwargs['lock'].release()
 
             threadnums = theproperty.thread
-            if threadnums == 1:
+            if threadnums == 1 or isparallel is False:
                 osnums = len(operators)
                 num = 1
                 for ops in operators:
                     if num % 100 == 0:
-                        print("this is ", num, " / ", osnums, " and time is ", datetime.datetime.now())
+                        logger.Info("this is " + str(num) + " / " + str(osnums) + " and time is " + str(datetime.datetime.now()))
                     num += 1
                     newcolumn = self.generateColumn(datadict["data"], ops)
                     if newcolumn is None:

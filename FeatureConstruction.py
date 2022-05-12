@@ -78,7 +78,7 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
                 # 构造特征
                 # 应用聚集操作
                 logger.Info(f"it is iteration of : {iters} / {iternums}")
-                otheroperatorspath = theproperty.finalchosenopspath + theproperty.dataframe + datadict['data'].name + "otheroperators" + str(iters)
+                otheroperatorspath = theproperty.rootpath + theproperty.finalchosenopspath + theproperty.dataframe + datadict['data'].name + "otheroperators" + str(iters)
                 if os.path.isfile(otheroperatorspath):
                     otheroperators = deserialize(otheroperatorspath)
                 else:
@@ -158,14 +158,14 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
                         logger.Info("No attributes are chosen,iteration over!")
                         break
                 finalchosenops += chosenoperators
-                finalchosenopspath = theproperty.finalchosenopspath + theproperty.dataframe + \
+                finalchosenopspath = theproperty.rootpath + theproperty.finalchosenopspath + theproperty.dataframe + \
                                      datadict['data'].name + "_finalchosenops_" + str(iters)
                 serialize(finalchosenopspath, finalchosenops)
                 om.GenerateAddColumnToData(datasetcopy, chosenoperators)
                 om.deleteColumn(datasetcopy)
                 currentclassifications = wevaluation.ProduceClassifications(datasetcopy, theproperty.classifier)
                 wevaluation.evaluationAsave(currentclassifications, iters, chosenoperators, totalnumofwrapperevaluation, False)
-                finaldatapath = theproperty.finalchosenopspath + theproperty.dataframe + \
+                finaldatapath = theproperty.rootpath + theproperty.finalchosenopspath + theproperty.dataframe + \
                                      datadict['data'].name + "_data_" + str(iters)
                 serialize(finaldatapath, datasetcopy)
 
@@ -177,7 +177,7 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
     except Exception as ex:
         logger.Error(f"_FC_Iter_ error!{ex}")
     finally:
-        serialize(theproperty.finalchosenopspath + theproperty.dataframe + datadict['data'].name + "finalchosenops", finalchosenops)
+        serialize(theproperty.rootpath + theproperty.finalchosenopspath + theproperty.dataframe + datadict['data'].name + "finalchosenops", finalchosenops)
         return datasetcopy['data']
 
 
@@ -224,7 +224,7 @@ def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: dic
     :param isiteration: 是否进行迭代
     :return: dask.dataframe.Dataframe
     '''
-    datadictpath = theproperty.temppath + theproperty.dataframe + theproperty.datasetname + "datadict.temp"
+    datadictpath = theproperty.rootpath + theproperty.temppath + theproperty.dataframe + theproperty.datasetname + "datadict.temp"
     if os.path.isfile(datadictpath):
         datadict = deserialize(datadictpath)
     else:
@@ -235,7 +235,7 @@ def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: dic
     return df
 
 def generateTestData(dataset, datasettrainname=theproperty.datasetname):
-    datadictpath = theproperty.temppath + theproperty.dataframe + dataset.name + "testdatadict.temp"
+    datadictpath = theproperty.rootpath + theproperty.temppath + theproperty.dataframe + dataset.name + "testdatadict.temp"
     if os.path.isfile(datadictpath):
         datadict = deserialize(datadictpath)
     else:

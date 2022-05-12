@@ -1,4 +1,5 @@
 import pickle
+from logger.logger import logger
 def serialize(filepath, obj):
     '''
     将模型序列化
@@ -6,8 +7,11 @@ def serialize(filepath, obj):
     :param obj:
     :return:
     '''
-    with open(filepath, "wb") as file:
-        pickle.dump(obj, file)
+    try:
+        with open(filepath, "wb") as file:
+            pickle.dump(obj, file)
+    except Exception as ex:
+        logger.Error(f"serialize error: {ex}" ,ex)
 
 def deserialize(filepath):
     '''
@@ -15,6 +19,9 @@ def deserialize(filepath):
     :param filepath:
     :return:
     '''
-    with open(filepath, "rb") as file:
-        obj = pickle.load(file)
-        return obj
+    try:
+        with open(filepath, "rb") as file:
+            obj = pickle.load(file)
+            return obj
+    except Exception as ex:
+        logger.Error(f"deserialize error: {ex}", ex)

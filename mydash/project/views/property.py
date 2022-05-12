@@ -1,5 +1,5 @@
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html
+from dash import dcc
 import dash_bootstrap_components as dbc
 
 
@@ -159,7 +159,8 @@ property_page = html.Div(
                                         {'label': 'pandas', 'value': 'pandas'},
                                         {'label': 'dask', 'value': 'dask'},
                                     ],
-                                    placeholder='pandas'
+                                    placeholder='pandas',
+                                    value='pandas'
                                 ),
                                 width=8
                             ),
@@ -211,7 +212,8 @@ property_page = html.Div(
                                         {'label': 'LogLossEvaluation', 'value': 'LogLossEvaluation'},
                                         {'label': 'FoneEvaluation', 'value': 'FoneEvaluation'},
                                     ],
-                                    placeholder='AucWrapperEvaluation'
+                                    placeholder='AucWrapperEvaluation',
+                                    value='AucWrapperEvaluation',
                                 ),
                                 width=8
                             ),
@@ -243,7 +245,8 @@ property_page = html.Div(
                                         {'label': 'DicisionTree', 'value': 'DicisionTree'},
                                         {'label': 'RandomForest', 'value': 'RandomForest'},
                                     ],
-                                    placeholder='RandomForest'
+                                    placeholder='RandomForest',
+                                    value='RandomForest',
                                 ),
                                 width=8
                             ),
@@ -276,7 +279,7 @@ property_page = html.Div(
                                 id='thread',
                                 placeholder='2',
                                 type="number",
-                                value=1
+                                value=8
                             ),
                             dbc.Tooltip('该参数是选择采用多少线程进行运行。',
                                         target="thread"),

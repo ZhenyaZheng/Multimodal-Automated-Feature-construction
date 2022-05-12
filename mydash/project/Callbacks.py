@@ -111,11 +111,16 @@ def setting_dataset(n_clicks, name, image_path, text_path, tabular_path):
     if n_clicks >= 1:
         if image_path == "":
             image_path = None
+        else:
+            image_path = theproperty.rootpath + image_path
         if text_path == "":
             text_path = None
+        else:
+            text_path = theproperty.rootpath + text_path
+        tabular_path = theproperty.rootpath + tabular_path
         datapath = {"image_path": image_path, "text_path": text_path, "tabular_path": tabular_path}
         global dataset
-        dataset = Dataset(datapath, name)
+        dataset = Dataset(datapath, name=name)
         global settingflag
         settingflag = True
         return "数据集设置成功"
@@ -127,7 +132,7 @@ def setting_dataset(n_clicks, name, image_path, text_path, tabular_path):
 )
 def mygeneratemodeldata(n_clicks):
     if n_clicks >= 1:
-        global settingflag
+        global settingflag, dataset
         if settingflag is False:
 
             return "请先设置数据集"

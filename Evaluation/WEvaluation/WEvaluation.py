@@ -54,9 +54,9 @@ class WEvaluation(Evaluation):
             sb += date.__str__().replace(" ", "")
 
             if istest == False:
-                filepath = theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname + "result.csv";
+                filepath = theproperty.rootpath + theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname + "result.csv";
             else:
-                filepath = theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname + "testresult.csv";
+                filepath = theproperty.rootpath + theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname + "testresult.csv";
             if newfile:
                 fw = open(filepath, "w")
             else:
@@ -64,7 +64,7 @@ class WEvaluation(Evaluation):
             fw.write(sb + "\n")
 
         except Exception as ex:
-            logger.Error("IOException: {ex}", ex)
+            logger.Error(f"IOException: {ex}", ex)
         finally:
             fw.close()
 
@@ -103,7 +103,8 @@ class WEvaluation(Evaluation):
             res = (y_t, y_p)
 
         except Exception as ex:
-            logger.Error(f"runclassifier error{ex}", ex)
+            #logger.Error(f"runclassifier error{ex}", ex)
+            pass
 
         finally:
             if theproperty.dataframe == "dask":

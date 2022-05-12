@@ -24,13 +24,13 @@ class MLAttributeManager:
         pass
 
     def getBackgroundClassificationModel(self, datadict):
-        backgroundFilePath = theproperty.backmodelpath + datadict["data"].name + "_model_classifier_obj"
+        backgroundFilePath = theproperty.rootpath + theproperty.backmodelpath + datadict["data"].name + "_model_classifier_obj"
         if os.path.isfile(backgroundFilePath):
             logger.Info(datadict["data"].name + " model has exist")
             model = deserialize(backgroundFilePath)
             return model
         else:
-            datasetfilepath = theproperty.datasetlocation
+            datasetfilepath = theproperty.rootpath + theproperty.datasetlocation
             if os.path.isdir(datasetfilepath):
                 addhead = True
                 for fp in os.listdir(datasetfilepath):
@@ -90,7 +90,7 @@ class MLAttributeManager:
 
     def getDatasetInstances(self, datadict):
         filename = datadict["data"].name + "_candidatedata.csv"
-        filepath = theproperty.datasetlocation + filename
+        filepath = theproperty.rootpath + theproperty.datasetlocation + filename
         if os.path.isfile(filepath):
             logger.Info(datadict["data"].name + "candidatedata has existed")
             if theproperty.dataframe == "dask":
@@ -114,10 +114,11 @@ class MLAttributeManager:
         :return:[{}]
         '''
         try:
-            trainsetattspath = theproperty.resultfilepath + datadict["data"].name + "_candidateattslist"
+            candidateattslist = []
+            trainsetattspath = theproperty.rootpath + theproperty.resultfilepath + datadict["data"].name + "_candidateattslist"
             if os.path.isfile(trainsetattspath):
                 return deserialize(trainsetattspath)
-            candidateattslist = []
+
             classifiers = theproperty.classifiersforMLAttributes
             dbas = DatasetAttributes()
             evaluator = WEvaluation()
@@ -173,14 +174,14 @@ class MLAttributeManager:
 
                 if numofthread > 1:
                     #parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
-                    threadpool = parallel.MyThreadPool(theproperty.thread, otheroperators, opername="MLAttribute")
+                    threadpool = parallel.MyThreadPool(theproperty.thread, otheroperators, opername="MLAttribute", infosep=100)
                     threadpool.run(myfunction, datadict=datadict, evaluator=evaluator, classifier=classifier,
                                    originalAUC=originalAUC, datasetatts=datasetatts, candidateattslist=candidateattslist)
                 else:
                     for ops in otheroperators:
 
                         if index % 100 == 0:
-                            logger.Info("have finish " + str(index) + " operators, and time is " + str(datetime.datetime.now()))
+                            logger.Info("have finish " + str(index) + " / " + str(len(otheroperators)) + " operators, and time is " + str(datetime.datetime.now()))
                         # if index > 800:
                         #     break
                         try:
@@ -216,6 +217,8 @@ class MLAttributeManager:
         finally:
             if os.path.isfile(trainsetattspath) == False:
                 serialize(trainsetattspath, candidateattslist)
+            else:
+                return deserialize(trainsetattspath)
             return candidateattslist
 
     def generateValuesTabular(self, dataattsvalues):
@@ -225,8 +228,8 @@ class MLAttributeManager:
         :return: pandas.dataframe
         '''
         try:
-            attributes = self.generateAtts(dataattsvalues[0], len(dataattsvalues))
             df = pd.DataFrame()
+            attributes = self.generateAtts(dataattsvalues[0], len(dataattsvalues))
             thename = []
             for atts in attributes:
                 df.insert(len(df.columns), atts.name, atts)

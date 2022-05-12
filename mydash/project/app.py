@@ -1,4 +1,4 @@
-import dash_html_components as html
+from dash import html
 from dash import dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
@@ -94,4 +94,4 @@ def render_page_content(pathname):
 
 if __name__ == '__main__':
     Test()
-    app.run_server(debug=True)
+    app.run_server(debug=False)

@@ -36,7 +36,7 @@ class properties:
         self.targetclasses = 2
         self.finalchosenopspath = "data/finalchosen/"
         self.dataframe = "pandas"
-        self.maxFEvaluationnums = 2000
+        self.maxFEvaluationnums = 10000
         self.randomseed = 20181858
         self.rootpath = "E:/dict/code/graduateDesignRefer/github/back/MAFC/"
         self.maxoperators = 10000

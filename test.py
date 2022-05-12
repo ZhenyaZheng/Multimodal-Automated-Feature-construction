@@ -69,9 +69,9 @@ if __name__ == "__main__":
     print(getNowTimeStr())
     print("End")
     '''
-    '''
+
     theproperty.dataframe = "pandas"
-    datasetpath = "D:/data/dataset/"
+    datasetpath = "data/datasettrain/"
     datapath = {"image_path": datasetpath + "image/", "text_path": datasetpath + "text/text.csv", "tabular_path": datasetpath + "tabular/data.csv"}
     dataset = Dataset(datapath, name="Alldata2000")
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     if data is not None and theproperty.dataframe == "dask":
         data = data.compute()
     print("End")
-    '''
+
     '''
     theproperty.dataframe = "pandas"
     print(getNowTimeStr())
@@ -103,7 +103,3 @@ if __name__ == "__main__":
         data = data.compute()
     print("End")
     '''
-    from text.TextOperator import TextOperator
-    from text.Operators import *
-    for cls in TextOperator.__subclasses__():
-        print(cls.__name__)

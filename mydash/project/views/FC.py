@@ -1,5 +1,4 @@
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html
 
 from mydash.project.callbacks.FC import test
 import dash_bootstrap_components as dbc
