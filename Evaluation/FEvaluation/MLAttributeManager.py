@@ -34,7 +34,7 @@ class MLAttributeManager:
             if os.path.isdir(datasetfilepath):
                 addhead = True
                 for fp in os.listdir(datasetfilepath):
-                    if os.path.isfile(datasetfilepath + fp) and datadict["data"].name not in datasetfilepath:
+                    if os.path.isfile(datasetfilepath + fp) and datadict["data"].name not in os.path.basename(datasetfilepath):
                         self.addFiletoTargetfile(backgroundFilePath, datasetfilepath + fp, addhead)
                         addhead = False
                     else:

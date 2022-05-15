@@ -25,7 +25,7 @@ dataresult_page = html.Div(
                     style={
                         'position': 'fixed',
                         'right': '20px',
-                        'top': '40px',
+                        'top': '20px',
                         'zIndex': '999'
                     },
                     inline=True
@@ -47,8 +47,9 @@ dataresult_page = html.Div(
                 ),
                 dcc.Graph(
                     id='dataresult-chart',
-                    style={'height': '100%', 'weight': '1000px'},
-                    config={'displayModeBar': False}
+                    style={'height': '90%', 'weight': '900px'},
+                    config={'displayModeBar': False},
+
                 ),
             ],
             style={

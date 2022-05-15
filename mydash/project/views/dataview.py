@@ -1,13 +1,16 @@
-from dash import html
+from dash import html, dcc, ClientsideFunction, Output, Input
 #import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 from dash import dash_table
 import pandas as pd
+
+from mydash.project.server import app
 from properties.properties import theproperty
 
 
 df = pd.DataFrame()
 df.insert(loc=0, column='#', value=df.index)
+
 
 dataview_page = html.Div(
     [
@@ -58,7 +61,7 @@ dataview_page = html.Div(
                         sort_action='native',
                         style_table={
                             'height': '1000px',
-                            'width': '1000px',
+                            'width': '800px',
                         },
                         style_cell={
                             'font-family': 'Times New Roman',
@@ -85,11 +88,27 @@ dataview_page = html.Div(
                         ]
                     ),
 
-                        style={
-                            'margin-top': '100px',
-                        }
-                    )
+                    style={
+                        'margin-top': '100px',
+                    }
+                ),
+
             ],
+        ),
+        html.Div(
+            [
+                dbc.Col(
+                    dbc.Label(id='feature_out'),
+                    width=5,
+                    style={
+                        'position': 'fixed',
+                        'left': '1150px',
+                        'top': '40px',
+                    },
+                ),
+
+                dcc.Graph(id="dataview-demo", style={"height": "90%", "width": "98%"}, config=dict(displayModeBar=False),)
+            ], className="col-4 chart_div"
         ),
 
     ],
@@ -98,3 +117,4 @@ dataview_page = html.Div(
         'height': '100%'
     }
 )
+

@@ -9,11 +9,11 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             // 清空图床
             // myChart.clear();
 
-            var builderJson = data['builderJson']
+            //var builderJson = data['builderJson']
 
             var downloadJson = data['downloadJson']
 
-            var themeJson = data['themeJson']
+            //var themeJson = data['themeJson']
 
             var waterMarkText = 'ECHARTS';
 
@@ -35,19 +35,19 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                     repeat: 'repeat'
                 },
                 tooltip: {},
-                title: [{
+                title: [/*{
                     text: '在线构建',
                     subtext: '总计 ' + builderJson.all,
                     left: '25%',
                     textAlign: 'center'
-                }, {
-                    text: '各版本下载',
+                }, */{
+                    text: '各类别特征',
                     subtext: '总计 ' + Object.keys(downloadJson).reduce(function (all, key) {
                         return all + downloadJson[key];
                     }, 0),
                     left: '75%',
                     textAlign: 'center'
-                }, {
+                },/* {
                     text: '主题下载',
                     subtext: '总计 ' + Object.keys(themeJson).reduce(function (all, key) {
                         return all + themeJson[key];
@@ -55,7 +55,8 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                     left: '75%',
                     top: '50%',
                     textAlign: 'center'
-                }],
+                }*/],
+                /*
                 grid: [{
                     top: 50,
                     width: '50%',
@@ -104,8 +105,8 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                     splitLine: {
                         show: false
                     }
-                }],
-                series: [{
+                }],*/
+                series: [/*{
                     type: 'bar',
                     stack: 'chart',
                     z: 3,
@@ -151,7 +152,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                     data: Object.keys(builderJson.components).map(function (key) {
                         return builderJson.all - builderJson.components[key];
                     })
-                }, {
+                }*/, {
                     type: 'pie',
                     radius: [0, '30%'],
                     center: ['75%', '25%'],
@@ -161,7 +162,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                             value: downloadJson[key]
                         };
                     })
-                }, {
+                }, /*{
                     type: 'pie',
                     radius: [0, '30%'],
                     center: ['75%', '75%'],
@@ -171,7 +172,7 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                             value: themeJson[key]
                         };
                     })
-                }]
+                }*/]
             };
 
             // 渲染

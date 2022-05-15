@@ -1,4 +1,4 @@
-from dash import html
+from dash import html, dcc
 
 from mydash.project.callbacks.FC import test
 import dash_bootstrap_components as dbc
@@ -31,8 +31,10 @@ FC_page = html.Div(
                             dbc.Tooltip('为数据集取个名字吧。',
                                 target='dataset_name'),
                             dbc.Tooltip('图片数据路径，没有的话留空。',
-                                        target='image_path')
-                            #dcc.Store(id='maxevaluationattsperiter-local', storage_type='local')
+                                        target='image_path'),
+                            dcc.Store(id='dataset_name-local', storage_type='session'),
+                            dcc.Store(id='image_path-local', storage_type='session'),
+
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -60,7 +62,9 @@ FC_page = html.Div(
                             dbc.Tooltip('文本数据路径，没有的话留空。',
                                         target='text_path'),
                             dbc.Tooltip('表格数据路径，没有的话留空。',
-                                        target='tabular_path')
+                                        target='tabular_path'),
+                            dcc.Store(id='text_path-local', storage_type='session'),
+                            dcc.Store(id='tabular_path-local', storage_type='session'),
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -126,8 +130,9 @@ FC_page = html.Div(
                             dbc.Tooltip('是否进行迭代操作，是1，否0。',
                                         target='is_iter'),
                             dbc.Tooltip('请输入迭代次数。',
-                                        target='iternums')
-                            #dcc.Store(id='maxevaluationattsperiter-local', storage_type='local')
+                                        target='iternums'),
+                            dcc.Store(id='is_iter-local', storage_type='session'),
+                            dcc.Store(id='iternums-local', storage_type='session'),
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -155,8 +160,9 @@ FC_page = html.Div(
                             dbc.Tooltip('自定义的操作代码文件路径，没有的话留空。',
                                         target='oper_path'),
                             dbc.Tooltip('自定义image操作名字，格式如下["name1","name2"...]，没有的话留空。',
-                                        target='image_oper')
-                            # dcc.Store(id='maxevaluationattsperiter-local', storage_type='local')
+                                        target='image_oper'),
+                            dcc.Store(id='oper_path-local', storage_type='session'),
+                            dcc.Store(id='image_oper-local', storage_type='session'),
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -184,8 +190,9 @@ FC_page = html.Div(
                             dbc.Tooltip('自定义text操作名字，格式如下["name1","name2"...]，没有的话留空。',
                                         target='text_oper'),
                             dbc.Tooltip('自定义operator操作名字，格式如下["name1","name2"...]，没有的话留空。',
-                                        target='oper_oper')
-                            # dcc.Store(id='maxevaluationattsperiter-local', storage_type='local')
+                                        target='oper_oper'),
+                            dcc.Store(id='text_oper-local', storage_type='session'),
+                            dcc.Store(id='oper_oper-local', storage_type='session'),
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -256,7 +263,7 @@ FC_page = html.Div(
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.Button('为测试集数据构造', id='FC_TestData', n_clicks=0, color='light'),
+                            dbc.Button('测试集数据特征构造', id='FC_TestData', n_clicks=0, color='light'),
                             dbc.Col(
                                 dbc.Spinner(dbc.Label(id='FC_TestData_out')),
                                 width=4

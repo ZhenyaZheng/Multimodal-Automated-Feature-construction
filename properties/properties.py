@@ -26,7 +26,7 @@ class properties:
         self.wsocre = 0.01
         self.maxevaluationattsperiter = 1500
         self.backmodelpath = "data/model/"
-        self.datasetname = "dataset"
+        self.datasetname = "Alldata2000"
         self.classifiersforMLAttributes = ["RandomForest"]
         self.targetindex = -1
         self.image_path = None

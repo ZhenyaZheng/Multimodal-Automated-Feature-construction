@@ -63,21 +63,32 @@ if __name__ == "__main__":
     '''
     theproperty.dataframe = "pandas"
     print(getNowTimeStr())
-    datapath = {"image_path": None, "text_path": None, "tabular_path": "data/otherdatas/test.csv"}
-    dataset = Dataset(datapath, name="hearttest")
-    data = FC(dataset, True, 10)
+    datapath = {"image_path": None, "text_path": None, "tabular_path": "data/otherdatas/cpu_act.csv"}
+    dataset = Dataset(datapath, name="cpu_act")
+    data = FC(dataset, True, 4)
     print(getNowTimeStr())
     print("End")
     '''
-
+    '''
     theproperty.dataframe = "pandas"
+    #theproperty.classifier = 'SVM'
     datasetpath = "data/datasettrain/"
     datapath = {"image_path": datasetpath + "image/", "text_path": datasetpath + "text/text.csv", "tabular_path": datasetpath + "tabular/data.csv"}
-    dataset = Dataset(datapath, name="Alldata2000")
+    dataset = Dataset(datapath, name="Alldata2000RF")
 
     data = FC(dataset, isiteration=True, iternums=4)
     if data is not None and theproperty.dataframe == "dask":
         data = data.compute()
+    print("End")
+    '''
+
+    theproperty.dataframe = "pandas"
+    datasetpath = "data/datasettest/"
+    datapath = {"image_path": datasetpath + "image/", "text_path": datasetpath + "text/text.csv",
+                "tabular_path": datasetpath + "tabular/data.csv"}
+    dataset = Dataset(datapath, name="Alldata2000RF")
+
+    data = generateTestData(dataset, dataset.name)
     print("End")
 
     '''

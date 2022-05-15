@@ -41,7 +41,7 @@ class Evaluation:
         elif classifiername == "DicisionTree":
             model = DecisionTreeClassifier()
         elif classifiername == "SVM":
-            model = SVC()
+            model = SVC(probability=True)
         else:
             logger.Error("No this Model : " + classifiername)
         return model

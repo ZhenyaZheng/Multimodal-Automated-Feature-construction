@@ -19,8 +19,8 @@ property_page = html.Div(
                                 value=1500
                             ),
                             dbc.Tooltip('该参数是限制评估器最多评估多少个新特征。',
-                                target='maxevaluationattsperiter')
-                            #dcc.Store(id='maxevaluationattsperiter-local', storage_type='local')
+                                target='maxevaluationattsperiter'),
+                            dcc.Store(id='maxevaluationattsperiter-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -39,8 +39,8 @@ property_page = html.Div(
                                 value=10
                             ),
                             dbc.Tooltip('该参数是规定数值型特征离散化后的个数。',
-                                        target='DiscretizerBinsNumber')
-                            #dcc.Store(id='DiscretizerBinsNumber-local', storage_type='local')
+                                        target='DiscretizerBinsNumber'),
+                            dcc.Store(id='DiscretizerBinsNumber-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -59,8 +59,8 @@ property_page = html.Div(
                                 value="data/finalchosen/"
                             ),
                             dbc.Tooltip('该参数是规定最终范式的保存路径。',
-                                        target='finalchosenopspath')
-                            #dcc.Store(id='finalchosenopspath-local', storage_type='local')
+                                        target='finalchosenopspath'),
+                            dcc.Store(id='finalchosenopspath-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -79,8 +79,8 @@ property_page = html.Div(
                                 value=3000
                             ),
                             dbc.Tooltip('该参数是限制过滤器最多评估多少个新特征。',
-                                        target='maxFEvaluationnums')
-                            # dcc.Store(id='finalchosenopspath-local', storage_type='local')
+                                        target='maxFEvaluationnums'),
+                            dcc.Store(id='maxFEvaluationnums-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -99,8 +99,8 @@ property_page = html.Div(
                                 value="data/model/"
                             ),
                             dbc.Tooltip('该参数是规定过滤器模型的保存路径。',
-                                        target='backmodelpath')
-                            #dcc.Store(id='backmodelpath-local', storage_type='local')
+                                        target='backmodelpath'),
+                            dcc.Store(id='backmodelpath-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -119,8 +119,8 @@ property_page = html.Div(
                                 value="data/datasets/"
                             ),
                             dbc.Tooltip('该参数是规定过滤器模型需要的训练数据集存放的路径。',
-                                        target='datasetlocation')
-                            #dcc.Store(id='datasetlocation-local', storage_type='local')
+                                        target='datasetlocation'),
+                            dcc.Store(id='datasetlocation-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -139,8 +139,8 @@ property_page = html.Div(
                                 value="data/result/"
                             ),
                             dbc.Tooltip('该参数是规定最终结果文件存放的路径。',
-                                        target='resultfilepath')
-                            #dcc.Store(id='resultfilepath-local', storage_type='local')
+                                        target='resultfilepath'),
+                            dcc.Store(id='resultfilepath-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -171,8 +171,8 @@ property_page = html.Div(
                                 children="参数说明",
                             ),
                             dbc.Tooltip('该参数是选择使用数据处理工具。',
-                                        target='mydataframe')
-                            # dcc.Store(id='temppath-local', storage_type='local')
+                                        target='mydataframe'),
+                            dcc.Store(id='dataframe-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -191,8 +191,8 @@ property_page = html.Div(
                                 value="data/temp/"
                             ),
                             dbc.Tooltip('该参数是规定中间文件存放的路径。',
-                                        target='temppath')
-                            #dcc.Store(id='temppath-local', storage_type='local')
+                                        target='temppath'),
+                            dcc.Store(id='temppath-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -224,8 +224,8 @@ property_page = html.Div(
                                 children="参数说明",
                             ),
                             dbc.Tooltip('该参数是用到的评估器。',
-                                        target='mywrapper')
-                            #dcc.Store(id='wrapper-local', storage_type='local')
+                                        target='mywrapper'),
+                            dcc.Store(id='wrapper-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -263,7 +263,7 @@ property_page = html.Div(
                             # ),
                             dbc.Tooltip('该参数是选择用到的模型。',
                                         target="myclassifier"),
-                            #dcc.Store(id='classifier-local', storage_type='local')
+                            dcc.Store(id='classifier-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -283,7 +283,7 @@ property_page = html.Div(
                             ),
                             dbc.Tooltip('该参数是选择采用多少线程进行运行。',
                                         target="thread"),
-                            #dcc.Store(id='thread-local', storage_type='local')
+                            dcc.Store(id='thread-local', storage_type='session')
                         ],
                     ),
                     width={'size': 6, 'offset': 3}
@@ -303,7 +303,7 @@ property_page = html.Div(
                             ),
                             dbc.Tooltip('该参数是选择过滤器的阈值。',
                                         target="fsocre"),
-                            #dcc.Store(id='fsocre-local', storage_type='local')
+                            dcc.Store(id='fsocre-local', storage_type='session')
                         ],
                     ),
 
@@ -324,7 +324,7 @@ property_page = html.Div(
                             ),
                             dbc.Tooltip('该参数是选择评估器的阈值。',
                                         target="wsocre"),
-                            # dcc.Store(id='fsocre-local', storage_type='local')
+                            dcc.Store(id='wsocre-local', storage_type='session')
                         ],
                     ),
 

@@ -203,8 +203,9 @@ def getDatadict(dataset, operatorbyself=None, operatorignore=None):
     #textview = text_fc.compute()
     #imageview = image_fc.compute()
     #dataview = data.compute()
-    datainfo = getInfo(data)
     saveDateFrame(data, theproperty.datasetname + "original")
+    datainfo = getInfo(data)
+
     datadict = {"data": data, "Info": datainfo}
     index = theproperty.targetindex
     datadict["target"] = datadict["data"].iloc[:, index]

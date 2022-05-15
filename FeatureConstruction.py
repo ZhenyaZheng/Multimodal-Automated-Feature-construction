@@ -235,7 +235,8 @@ def FC(dataset, isiteration: bool = False, iternums: int = 1,operatorbyself: dic
     return df
 
 def generateTestData(dataset, datasettrainname=theproperty.datasetname):
-    datadictpath = theproperty.rootpath + theproperty.temppath + theproperty.dataframe + dataset.name + "testdatadict.temp"
+    datadictpath = theproperty.rootpath + theproperty.temppath + theproperty.dataframe + datasettrainname + "testdatadict.temp"
+    logger.Info("strat generateTestData!")
     if os.path.isfile(datadictpath):
         datadict = deserialize(datadictpath)
     else:
@@ -249,7 +250,7 @@ def generateTestData(dataset, datasettrainname=theproperty.datasetname):
     datacopy = copy.deepcopy(datadict)
     classificationresult = wevaluation.getClassifications(datacopy, theproperty.classifier)
     wevaluation.evaluationAsave(classificationresult, 0, istest=True)
-    om.GenerateAddColumnToData(datadict, operators)
+    om.GenerateAddColumnToData(datadict, operators, isparallel=False)
     datacopy = copy.deepcopy(datadict)
     classificationresult = wevaluation.getClassifications(datacopy, theproperty.classifier)
     wevaluation.evaluationAsave(classificationresult, 1, operators, len(operators), newfile=False, istest=True)
