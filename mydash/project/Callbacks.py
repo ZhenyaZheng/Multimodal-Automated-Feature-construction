@@ -1,6 +1,6 @@
 import copy
 import os
-
+from utils import execmyfunc
 import dash
 import numpy as np
 import pandas as pd
@@ -269,8 +269,6 @@ def mygeneratemodeldata(n_clicks):
             generateModelData(dataset)
             return "生成模型数据成功"
 
-
-
 @app.callback(
     Output('FC_startFC', 'children'),
     Input('FC_strat', 'n_clicks'),
@@ -293,24 +291,23 @@ def FC_dataset(n_clicks, is_iter, iternums, oper_path, image_oper, text_oper, op
         return "数据集未设置"
     if n_clicks >= 1:
         if oper_path != "":
-            if os.path.isfile(oper_path, 'r'):
-                with open(oper_oper) as fp:
-                    fp.read()
-                eval(str(fp))
+            if os.path.isfile(theproperty.rootpath + oper_path):
+                theproperty.extendpath = oper_path
+                #execmyfunc(codes)
         selfoper = {"image": None, "text": None, "tabular": None}
         ignoper = {"image": None, "text": None, "tabular": None}
         if image_oper != "":
-            selfoper["image"] = image_oper
+            selfoper["image"] = eval(image_oper)
         if text_oper != "":
-            selfoper["text"] = text_oper
+            selfoper["text"] = eval(text_oper)
         if oper_oper != "":
-            selfoper["tabular"] = oper_oper
+            selfoper["tabular"] = eval(oper_oper)
         if image_ign_oper != "":
-            ignoper["image"] = image_ign_oper
+            ignoper["image"] = eval(image_ign_oper)
         if text_ign_oper != "":
-            ignoper["text"] = text_ign_oper
+            ignoper["text"] = eval(text_ign_oper)
         if oper_ign_oper != "":
-            ignoper["tabular"] = oper_ign_oper
+            ignoper["tabular"] = eval(oper_ign_oper)
         global data
         data = FC(dataset, is_iter == 1, iternums, selfoper, ignoper)
         return "特征构建完成"
@@ -327,7 +324,7 @@ def FC_TestData(n_clicks):
         global dataset, settingflag
         if settingflag is False:
             return "数据集未设置"
-        generateTestData(dataset)
+        generateTestData(dataset, dataset.name)
         return "测试集特征构建完成"
 
 def getdf(value):
@@ -492,71 +489,7 @@ def dataresult_switch_chart(value, iters):
             fig.update_layout(
                 margin=dict(t=10, b=10)
             )
-            '''
-            trace1 = go.Bar(
-                x=namelist,
-                y=Chosen_Attributes_FScore,
-                name='F_Score',
-                text=Chosen_Attributes_FScore,
-                textposition='outside',
-                orientation='h',
-            )
-            trace2 = go.Bar(
-                x=namelist,  # 横轴名称
-                y=Chosen_Attributes_WScore,  # 纵轴数据
-                name='W_Score',  # 右边小标签名称和浮标名称
-                orientation='h',
-                text=Chosen_Attributes_WScore,  # 设置浮标内容，可以是个数组，用于显示每个条目的说明或者需要一直显示的数据，配合textposition使用
 
-                textposition='outside',
-
-                insidetextanchor='start',  # 只有当textposition全部为inside之后才起作用，默认是‘end’。‘start’、‘middle’、‘end’
-
-                textfont={  # 设置text的样式
-                    'family': 'Courier New',  # 设置字体
-                    'size': 16,  # 字体大小
-                    'color': '#000'  # 字体颜色
-                },
-
-                hovertext='After_FC',  # 设置浮标里面的内容
-
-                marker={  # 设置柱形图样式
-                    'line': {  # 设置线的样式
-                        'width': 4,  # 线的宽度
-                        'color': '#00FF00',  # 先的颜色
-                    },
-                    'colorbar': {  # 设置颜色标尺，可以看出程度
-                        'thicknessmode': 'pixels',  # 设置标尺宽度模式，‘fraction’ 分数占比、‘pixels’ 像素值
-                        'thickness': 12,  # 设置具体占比和像素大小，标尺的宽度，如果是像素，则使用整数
-                        'lenmode': 'fraction',  # 标尺高度模式，‘fraction’ 分数占比、'pixels' 像素值
-                        'len': 0.8,  # 标尺高度具体数值，如果是像素，则使用整数
-                        'x': -0.08,  # 设置标尺位置，[-2, 3]之间
-                        'xanchor': 'center',  # 标尺的对齐方式，‘left’、‘center’、‘right’，默认‘left’
-                        'y': 0,  # 标尺的y位置
-                        'yanchor': 'bottom',  # 标尺y轴对齐方式，‘top’、‘middle’、‘bottom’，默认‘middle’
-                        'tickformat': '.2s',  # 设置标尺文字的匹配格式，比如百分比'.2%', 带k的整数'.2s'
-                        'title': {  # 标尺的内容，可以只是一个字符串，也可以像现在这样设置一个字典
-                            'text': '程度',  # 标尺的名称
-                            'font': {
-                                'size': 16,  # 大小
-                                'color': '#5982AD',  # 颜色
-                            },
-                            'side': 'top',  # 位置，‘right’、‘top’、‘bottom’，默认是‘top’
-                        },
-                    },
-                },
-            )
-            layout = go.Layout(
-                title='指标对比',
-                barmode='group',  # 可以分为 ‘stack’(叠加）、‘group’（分组）、‘overlay’（重叠）、‘relative’（相关）， 默认是‘group’
-                barnorm='',  # 设置柱形图纵轴或横轴数据的表示形式，可以是fraction（分数），percent（百分数）
-
-            )
-            fig = go.Figure(
-                data=[trace1, trace2],
-                layout=layout
-            )
-            '''
         else:
             #fig = go.Figure()
             df = pd.read_csv(
@@ -570,68 +503,7 @@ def dataresult_switch_chart(value, iters):
             F1Score1 = float(df.loc[1]["F1Score"])
             scorelist0 = [AUC0, LogLoss0, F1Score0]
             scorelist1 = [AUC1, LogLoss1, F1Score1]
-            '''
-            fig.add_trace(go.Bar(
-                y=namelist,
-                x=scorelist0,
-                name='Original_Score',
-                marker_color='indianred',
-                orientation='h',
-                marker={  # 设置柱形图样式
-                    'line': {  # 设置线的样式
-                        'width': 4,  # 线的宽度
-                        'color': '#00FF00',  # 先的颜色
-                    },
-                    # 设置属性图的颜色，可以是单个颜色，也可以是数组，还可以是数字数组
-                    # 'color': ['#123', '#234', '#345', '#456', '#567', '#789', '#89a', '#8ab', '#abc', '#bcd'],
-                    'color': scty2,  # 这种可以用于设置根据数据用不同颜色来表示程度
-                    # 'cmin': 0, #只有‘color’为数字数组时才起作用
-                    # 'cmax': 10, #只有‘color’为数字数组时才起作用
-                    # 'colorscale': 'Greys', #变成灰度图
-                    'colorbar': {  # 设置颜色标尺，可以看出程度
-                        'thicknessmode': 'pixels',  # 设置标尺宽度模式，‘fraction’ 分数占比、‘pixels’ 像素值
-                        'thickness': 12,  # 设置具体占比和像素大小，标尺的宽度，如果是像素，则使用整数
-                        'lenmode': 'fraction',  # 标尺高度模式，‘fraction’ 分数占比、'pixels' 像素值
-                        'len': 0.8,  # 标尺高度具体数值，如果是像素，则使用整数
-                        'x': -0.08,  # 设置标尺位置，[-2, 3]之间
-                        'xanchor': 'center',  # 标尺的对齐方式，‘left’、‘center’、‘right’，默认‘left’
-                        'y': 0,  # 标尺的y位置
-                        'yanchor': 'bottom',  # 标尺y轴对齐方式，‘top’、‘middle’、‘bottom’，默认‘middle’
-                        'tickformat': '.2s',  # 设置标尺文字的匹配格式，比如百分比'.2%', 带k的整数'.2s'
-                        'title': {  # 标尺的内容，可以只是一个字符串，也可以像现在这样设置一个字典
-                            'text': '程度',  # 标尺的名称
-                            'font': {
-                                'size': 16,  # 大小
-                                'color': '#5982AD',  # 颜色
-                            },
-                            'side': 'top',  # 位置，‘right’、‘top’、‘bottom’，默认是‘top’
-                        },
-                    },
-                },
-            ))
-            fig.add_trace(go.Bar(
-                y=namelist,
-                x=scorelist1,
-                name='FC_Score',
-                marker_color='lightsalmon',
-                orientation='h'
-            ))
-            fig.update_layout(
-                font=dict(
-                    family="Times New Roman, SimSun",
-                    size=10
-                )
-            )
 
-            fig.update_layout(
-                title_font_family="Times New Roman, SimSun"
-            )
-
-            fig.update_layout(
-                margin=dict(t=10, b=20),
-                
-            )
-            '''
             scty1 = [
                 AUC0, LogLoss0, F1Score0
             ]
@@ -654,42 +526,44 @@ def dataresult_switch_chart(value, iters):
 
                 textposition='outside',
 
-                insidetextanchor='start',  # 只有当textposition全部为inside之后才起作用，默认是‘end’。‘start’、‘middle’、‘end’
-
-                textfont={  # 设置text的样式
-                    'family': 'Courier New',  # 设置字体
-                    'size': 16,  # 字体大小
-                    'color': '#000'  # 字体颜色
-                },
-
-                hovertext='After_FC',  # 设置浮标里面的内容
-
-                marker={  # 设置柱形图样式
-                    'line': {  # 设置线的样式
-                        'width': 4,  # 线的宽度
-                        'color': '#00FF00',  # 先的颜色
-                    },
-                    'colorbar': {  # 设置颜色标尺，可以看出程度
-                        'thicknessmode': 'pixels',  # 设置标尺宽度模式，‘fraction’ 分数占比、‘pixels’ 像素值
-                        'thickness': 12,  # 设置具体占比和像素大小，标尺的宽度，如果是像素，则使用整数
-                        'lenmode': 'fraction',  # 标尺高度模式，‘fraction’ 分数占比、'pixels' 像素值
-                        'len': 0.8,  # 标尺高度具体数值，如果是像素，则使用整数
-                        'x': -0.08,  # 设置标尺位置，[-2, 3]之间
-                        'xanchor': 'center',  # 标尺的对齐方式，‘left’、‘center’、‘right’，默认‘left’
-                        'y': 0,  # 标尺的y位置
-                        'yanchor': 'bottom',  # 标尺y轴对齐方式，‘top’、‘middle’、‘bottom’，默认‘middle’
-                        'tickformat': '.2s',  # 设置标尺文字的匹配格式，比如百分比'.2%', 带k的整数'.2s'
-                        'title': {  # 标尺的内容，可以只是一个字符串，也可以像现在这样设置一个字典
-                            'text': '程度',  # 标尺的名称
-                            'font': {
-                                'size': 16,  # 大小
-                                'color': '#5982AD',  # 颜色
-                            },
-                            'side': 'top',  # 位置，‘right’、‘top’、‘bottom’，默认是‘top’
-                        },
-                    },
-                },
             )
+            '''
+                            insidetextanchor='start',  # 只有当textposition全部为inside之后才起作用，默认是‘end’。‘start’、‘middle’、‘end’
+
+                            textfont={  # 设置text的样式
+                                'family': 'Courier New',  # 设置字体
+                                'size': 16,  # 字体大小
+                                'color': '#000'  # 字体颜色
+                            },
+
+                            hovertext='After_FC',  # 设置浮标里面的内容
+
+                            marker={  # 设置柱形图样式
+                                'line': {  # 设置线的样式
+                                    'width': 4,  # 线的宽度
+                                    'color': '#00FF00',  # 先的颜色
+                                },
+                                'colorbar': {  # 设置颜色标尺，可以看出程度
+                                    'thicknessmode': 'pixels',  # 设置标尺宽度模式，‘fraction’ 分数占比、‘pixels’ 像素值
+                                    'thickness': 12,  # 设置具体占比和像素大小，标尺的宽度，如果是像素，则使用整数
+                                    'lenmode': 'fraction',  # 标尺高度模式，‘fraction’ 分数占比、'pixels' 像素值
+                                    'len': 0.8,  # 标尺高度具体数值，如果是像素，则使用整数
+                                    'x': -0.08,  # 设置标尺位置，[-2, 3]之间
+                                    'xanchor': 'center',  # 标尺的对齐方式，‘left’、‘center’、‘right’，默认‘left’
+                                    'y': 0,  # 标尺的y位置
+                                    'yanchor': 'bottom',  # 标尺y轴对齐方式，‘top’、‘middle’、‘bottom’，默认‘middle’
+                                    'tickformat': '.2s',  # 设置标尺文字的匹配格式，比如百分比'.2%', 带k的整数'.2s'
+                                    'title': {  # 标尺的内容，可以只是一个字符串，也可以像现在这样设置一个字典
+                                        'text': '程度',  # 标尺的名称
+                                        'font': {
+                                            'size': 16,  # 大小
+                                            'color': '#5982AD',  # 颜色
+                                        },
+                                        'side': 'top',  # 位置，‘right’、‘top’、‘bottom’，默认是‘top’
+                                    },
+                                },
+                            },
+                            '''
             layout = go.Layout(
                 title='指标对比',
                 barmode='group',  # 可以分为 ‘stack’(叠加）、‘group’（分组）、‘overlay’（重叠）、‘relative’（相关）， 默认是‘group’

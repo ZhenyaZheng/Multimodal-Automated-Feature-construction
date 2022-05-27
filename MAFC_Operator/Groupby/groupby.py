@@ -1,6 +1,6 @@
 from abc import ABC
 from logger.logger import logger
-from MAFC_Operator import Operator, operatorType, outputType
+from MAFC_Operator.operator_base import Operator, operatorType, outputType
 
 
 class Groupby(Operator):

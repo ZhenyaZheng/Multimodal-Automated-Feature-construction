@@ -5,6 +5,9 @@ from image.ImageOperators import *
 from logger.logger import logger
 import dask.dataframe as dd
 
+with open(theproperty.rootpath + theproperty.extendpath, 'r') as fp:
+    codes = fp.read()
+exec(codes)
 
 def pddMerge(data1: dd.DataFrame, data2: dd.DataFrame):
     '''
@@ -17,17 +20,18 @@ def pddMerge(data1: dd.DataFrame, data2: dd.DataFrame):
     return data1
 
 def getOperatorList():
-    return [c.__name__ for c in ImageOperator.__subclasses__()]
+    return list(set([c.__name__ for c in ImageOperator.__subclasses__()]))
 
 def getOperator(oplist, iglist):
     alloplist = getOperatorList()
-    if oplist == None:
-        oplist = alloplist
-    else:
+
+
+    if oplist is not None:
         for opt in oplist:
             if opt not in alloplist:
                 logger.Info(opt + " is not define")
-    if iglist != None:
+        oplist = alloplist
+    if iglist is not None:
         oplist = list(set(oplist) - set(iglist))
     return [eval(opt + "()") for opt in oplist]
 
@@ -59,6 +63,7 @@ def process(imagedata, imageoper=None, imageigoper=None):
                 elif type(newseries) == pd.Series:
                     data[oper.getName()] = newseries
         except Exception as ex:
-                logger.Error(f'Failed in func "image_process" with exception: {ex}')
+            logger.Error(f'Failed in func "image_process" with exception: {ex}')
+            continue
     data = data.set_index("id")
     return data

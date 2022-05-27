@@ -34,11 +34,13 @@ class properties:
         self.temppath = "data/temp/"
         self.targetmutil = False
         self.targetclasses = 2
+        self.extendpath = "test/mymafcoper.py"
         self.finalchosenopspath = "data/finalchosen/"
         self.dataframe = "pandas"
         self.maxFEvaluationnums = 10000
-        self.randomseed = 20181858
+        self.randomseed = 1
         self.rootpath = "E:/dict/code/graduateDesignRefer/github/back/MAFC/"
         self.maxoperators = 10000
+        self.mutilprocess = True
 
 theproperty = properties()

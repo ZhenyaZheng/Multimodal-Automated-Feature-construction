@@ -6,7 +6,7 @@ from shutil import copyfile
 import numpy as np
 import pandas as pd
 from distributed import Client
-import parallel.parallel
+from parallel.parallel import MutilProcess ,MyThreadPool
 from Evaluation.FEvaluation.OperatorBasedAttributes import OperatorBasedAttributes
 import dask.dataframe
 from Evaluation.FEvaluation.DatasetAttributes import DatasetAttributes
@@ -90,7 +90,8 @@ class MLAttributeManager:
 
     def getDatasetInstances(self, datadict):
         filename = datadict["data"].name + "_candidatedata.csv"
-        filepath = theproperty.rootpath + theproperty.datasetlocation + filename
+        logger.Info(f"start {filename} getDatasetInstances")
+        filepath = theproperty.rootpath + theproperty.datasetlocation + 'candidateattslist/' + filename
         if os.path.isfile(filepath):
             logger.Info(datadict["data"].name + "candidatedata has existed")
             if theproperty.dataframe == "dask":
@@ -173,17 +174,23 @@ class MLAttributeManager:
                         logger.Error(f"generateTrainsetAtts", ex)
 
                 if numofthread > 1:
-                    #parallel.palallelForEach(myfunction, [oop for oop in otheroperators])
-                    threadpool = parallel.MyThreadPool(theproperty.thread, otheroperators, opername="MLAttribute", infosep=100)
-                    threadpool.run(myfunction, datadict=datadict, evaluator=evaluator, classifier=classifier,
-                                   originalAUC=originalAUC, datasetatts=datasetatts, candidateattslist=candidateattslist)
+                    if theproperty.mutilprocess == True:
+                        mutilprocess = MutilProcess(theproperty.thread, otheroperators, opername="MLAttribute",
+                                                           maxops=2000, infosep=100)
+                        mutilprocess.run(myfunction, datadict=datadict, evaluator=evaluator, classifier=classifier,
+                                       originalAUC=originalAUC, datasetatts=datasetatts,
+                                       candidateattslist=candidateattslist)
+                    else:
+                        threadpool = MyThreadPool(theproperty.thread, otheroperators, opername="MLAttribute", maxops=2000, infosep=100)
+                        threadpool.run(myfunction, datadict=datadict, evaluator=evaluator, classifier=classifier,
+                                       originalAUC=originalAUC, datasetatts=datasetatts, candidateattslist=candidateattslist)
                 else:
                     for ops in otheroperators:
 
                         if index % 100 == 0:
                             logger.Info("have finish " + str(index) + " / " + str(len(otheroperators)) + " operators, and time is " + str(datetime.datetime.now()))
-                        # if index > 800:
-                        #     break
+                        if index > 2000:
+                            break
                         try:
                             datacopy = copy.deepcopy(datadict)
                             candidateatt = oms.generateColumn(datacopy["data"], ops, False)

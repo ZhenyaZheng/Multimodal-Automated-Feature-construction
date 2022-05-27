@@ -10,3 +10,8 @@ class RankFilter:
         operatorslist.sort(key=lambda ob: ob.getFScore(), reverse=True)
         newopertorslist = list(filter(lambda ops: ops.getFScore() > theproperty.fsocre, operatorslist))
         return newopertorslist
+
+    def rankAndWrapper(self, operatorslist: list[Operators], previousiterchosenatts: list[ColumnInfo] = None):
+        operatorslist.sort(key=lambda ob: ob.getWScore(), reverse=True)
+        newopertorslist = list(filter(lambda ops: ops.getWScore() > theproperty.wsocre, operatorslist))
+        return newopertorslist

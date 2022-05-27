@@ -7,17 +7,21 @@ from text.TextOperator import TextOperator
 from logger.logger import logger
 
 def getOperatorList():
-    return [c.__name__ for c in TextOperator.__subclasses__()]
+    return list(set([c.__name__ for c in TextOperator.__subclasses__()]))
+
+with open(theproperty.rootpath + theproperty.extendpath, 'r') as fp:
+    codes = fp.read()
+exec(codes)
 
 def getOperator(oplist, iglist):
     alloplist = getOperatorList()
-    if oplist == None:
-        oplist = alloplist
-    else:
+
+    if oplist is not None:
         for opt in oplist:
             if opt not in alloplist:
                 logger.Error(opt + " is not define")
-    if iglist != None:
+        oplist = alloplist
+    if iglist is not None:
         oplist = list(set(oplist) - set(iglist))
     return [eval(opt + "()") for opt in oplist]
 

@@ -1,6 +1,7 @@
 from sklearn.cluster import KMeans
 import pickle
 import numpy as np
+from properties.properties import theproperty
 class Cluster(object):
 
     def __init__(self, n_clusters=10):
@@ -28,7 +29,7 @@ class WordCluster(Cluster):
         self.embed_dict = None    
 
     def avg_embed(self):
-        embed_path = "text/embed.plk"#os.path.join(self.dataset.base_dir, 'parsed_data/embed.plk')
+        embed_path = theproperty.rootpath + "text/embed.plk"#os.path.join(self.dataset.base_dir, 'parsed_data/embed.plk')
         if self.embed_dict is None:
             self.embed_dict = pickle.load(open(embed_path, 'rb'))
 

@@ -6,7 +6,7 @@ from MAFC_Operator.OperatorManager import OperatorManager
 from Evaluation.FEvaluation.AttributeInfo import AttributeInfo
 from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
 from Evaluation.FEvaluation.StatisticOperation import StatisticOperation
-from MAFC_Operator import Operators
+from MAFC_Operator.Operators import Operators
 from logger.logger import logger
 from MAFC_Operator.operator_base import outputType, operatorType
 

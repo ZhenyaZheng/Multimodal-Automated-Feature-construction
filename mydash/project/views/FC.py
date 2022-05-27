@@ -19,14 +19,14 @@ FC_page = html.Div(
                                 id='dataset_name',
                                 #placeholder='5',
                                 type="str",
-                                value="dataset"
+                                value="MutilModaldata"
                             ),
                             dbc.InputGroupAddon("图片路径", addon_type="prepend"),
                             dbc.Input(
                                 id='image_path',
                                 #placeholder='5',
                                 type="str",
-                                value="data/image/"
+                                value="data/datasettrain/image/"
                             ),
                             dbc.Tooltip('为数据集取个名字吧。',
                                 target='dataset_name'),
@@ -50,14 +50,14 @@ FC_page = html.Div(
                                 id='text_path',
                                 # placeholder='5',
                                 type="str",
-                                value="data/text/text.csv"
+                                value="data/datasettrain/text/text.csv"
                             ),
                             dbc.InputGroupAddon("表格路径", addon_type="prepend"),
                             dbc.Input(
                                 id='tabular_path',
                                 # placeholder='5',
                                 type="str",
-                                value="data/tabular/data.csv"
+                                value="data/datasettrain/tabular/data.csv"
                             ),
                             dbc.Tooltip('文本数据路径，没有的话留空。',
                                         target='text_path'),
@@ -148,14 +148,14 @@ FC_page = html.Div(
                                 id='oper_path',
                                 # placeholder='5',
                                 type="str",
-                                value=""
+                                value="test/mymafcoper.py"
                             ),
                             dbc.InputGroupAddon("image", addon_type="prepend"),
                             dbc.Input(
                                 id='image_oper',
                                 # placeholder='5',
                                 type="str",
-                                value=""
+                                value="['MyImageOperator']"
                             ),
                             dbc.Tooltip('自定义的操作代码文件路径，没有的话留空。',
                                         target='oper_path'),
@@ -178,18 +178,18 @@ FC_page = html.Div(
                                 id='text_oper',
                                 # placeholder='5',
                                 type="str",
-                                value=""
+                                value="['MyTextOperator']"
                             ),
                             dbc.InputGroupAddon("operator", addon_type="prepend"),
                             dbc.Input(
                                 id='oper_oper',
                                 # placeholder='5',
                                 type="str",
-                                value=""
+                                value="{'unary':['MyOperator']}"
                             ),
                             dbc.Tooltip('自定义text操作名字，格式如下["name1","name2"...]，没有的话留空。',
                                         target='text_oper'),
-                            dbc.Tooltip('自定义operator操作名字，格式如下["name1","name2"...]，没有的话留空。',
+                            dbc.Tooltip('自定义operator操作名字，格式如下{"unary":["name1","name2"...],"other":"["name1","name2"...]"}，没有的话留空。',
                                         target='oper_oper'),
                             dcc.Store(id='text_oper-local', storage_type='session'),
                             dcc.Store(id='oper_oper-local', storage_type='session'),
@@ -217,20 +217,20 @@ FC_page = html.Div(
                                 id='text_ign_oper',
                                 # placeholder='5',
                                 type="str",
-                                value=""
+                                value="['CountWords']"
                             ),
                             dbc.InputGroupAddon("operator", addon_type="prepend"),
                             dbc.Input(
                                 id='oper_ign_oper',
                                 # placeholder='5',
                                 type="str",
-                                value=""
+                                value="{'unary':['Discretizer']}"
                             ),
                             dbc.Tooltip('忽略的image操作名字，格式如下["name1","name2"...]，没有的话留空。',
                                         target='image_ign_oper'),
                             dbc.Tooltip('忽略的text操作名字，格式如下["name1","name2"...]，没有的话留空。',
                                         target='text_ign_oper'),
-                            dbc.Tooltip('忽略的operator操作名字，格式如下["name1","name2"...]，没有的话留空。',
+                            dbc.Tooltip('忽略的operator操作名字，格式如下{"unary":["name1","name2"...],"other":"["name1","name2"...]"}，没有的话留空。',
                                         target='oper_ign_oper'),
                             # dcc.Store(id='maxevaluationattsperiter-local', storage_type='local')
                         ],

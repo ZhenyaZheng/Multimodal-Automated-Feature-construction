@@ -1,11 +1,12 @@
 import copy
 import datetime
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from random import random
+
 import numpy as np
 from MAFC_Operator.Operators import Operators
 from logger.logger import logger
-from parallel import parallel, MyThreadPool
+from parallel import parallel, MyThreadPool, MutilProcess
 from properties.properties import theproperty
 import pandas as pd
 from MAFC_Operator.ColumnInfo import ColumnInfo
@@ -14,6 +15,12 @@ from MAFC_Operator.operator_base import operatorType
 from MAFC_Operator.Binary import *
 from MAFC_Operator.Unary import *
 from MAFC_Operator.Groupby import *
+
+with open(theproperty.rootpath + theproperty.extendpath, 'r') as fp:
+    codes = fp.read()
+exec(codes)
+
+
 class OperatorManager:
     def __init__(self):
         pass
@@ -47,7 +54,7 @@ class OperatorManager:
         except Exception as ex:
             logger.Error(f"deleteColumn error: {ex}", ex)
 
-    def UnaryOperator(self, data,unaryoperatorlist):
+    def UnaryOperator(self, data, unaryoperatorlist):
         '''
         :param data: {"data":data,"Info":[ColumnInfo]}
         :param unaryoperatorlist: ["operator"]
@@ -113,7 +120,7 @@ class OperatorManager:
                 kwargs['lock'].release()
 
             threadnums = theproperty.thread
-            if threadnums == 1 or isparallel is False:
+            if threadnums == 1 or isparallel is False :
                 osnums = len(operators)
                 num = 1
                 for ops in operators:
@@ -317,6 +324,30 @@ class OperatorManager:
                     ops.setFScore(0.0)
         else:
             #parallel.ParallelForEachShare(myfunction, [ops for ops in operators])
-            threadpool = MyThreadPool(theproperty.thread, operators, theproperty.maxFEvaluationnums, opername="FEvaluation")
-            threadpool.run(myfunction, datadict=datadict, fevaluation=fevaluation)
+            if theproperty.mutilprocess == True:
+                mutilprocess = MutilProcess(theproperty.thread, operators, theproperty.maxFEvaluationnums,
+                                          opername="FEvaluation")
+                res = mutilprocess.run(myfuncforfsocre, datadict=datadict, fevaluation=fevaluation)
+                for socre, ops in zip(res, operators):
+                    ops.setFScore(socre.get())
+            else:
+                threadpool = MyThreadPool(theproperty.thread, operators, theproperty.maxFEvaluationnums, opername="FEvaluation")
+                threadpool.run(myfunction, datadict=datadict, fevaluation=fevaluation)
+
+def myfuncforfsocre(ops, kwargs):
+    try:
+        om = OperatorManager()
+        datacopy = copy.deepcopy(kwargs['datadict'])
+        newcolumn = om.generateColumn(datacopy["data"], ops)
+        if newcolumn is None or kwargs['fevaluation'] is None:
+            logger.Info("generate column or fevaluation error!")
+            return
+        newfevaluation = copy.deepcopy(kwargs['fevaluation'])
+        templist = [newcolumn]
+        newfevaluation.initFEvaluation(templist)
+        fsocre = newfevaluation.produceScore(datacopy, None, ops, newcolumn)
+        return fsocre
+    except Exception as ex:
+        logger.Error(f"calculateFsocre error!{ex}")
+        return 0.0
 

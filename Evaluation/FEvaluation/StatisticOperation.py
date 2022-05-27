@@ -2,8 +2,8 @@ import numpy as np
 from numpy import double
 from scipy import stats
 from MAFC_Operator.operator_base import outputType
-from MAFC_Operator import ColumnInfo
-from MAFC_Operator.Unary import Discretizer
+from MAFC_Operator.ColumnInfo import ColumnInfo
+from MAFC_Operator.Unary.discretizer import Discretizer
 from logger.logger import logger
 from properties.properties import theproperty
 

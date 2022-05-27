@@ -1,9 +1,9 @@
 from stanfordcorenlp import StanfordCoreNLP
-
+from properties.properties import theproperty
 
 class StanfordNLP:
 
-    def __init__(self, model_path='text/stanfordmodel/stanford-corenlp-full-2018-10-05'):
+    def __init__(self, model_path= theproperty.rootpath + 'text/stanfordmodel/stanford-corenlp-full-2018-10-05'):
         try:
             self.standford_nlp = StanfordCoreNLP(model_path)
             #print("StanfordNLP Suceessful!")

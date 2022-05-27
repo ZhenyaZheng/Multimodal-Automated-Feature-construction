@@ -1,5 +1,7 @@
 import dask.dataframe as dd
 import pandas as pd
+import spacy
+
 from Dataset import Dataset
 from logger.logger import logger
 from utils import getDatadict
@@ -74,7 +76,7 @@ if __name__ == "__main__":
     #theproperty.classifier = 'SVM'
     datasetpath = "data/datasettrain/"
     datapath = {"image_path": datasetpath + "image/", "text_path": datasetpath + "text/text.csv", "tabular_path": datasetpath + "tabular/data.csv"}
-    dataset = Dataset(datapath, name="Alldata2000RF")
+    dataset = Dataset(datapath, name="Alldata2000Test")
 
     data = FC(dataset, isiteration=True, iternums=4)
     if data is not None and theproperty.dataframe == "dask":
@@ -86,16 +88,18 @@ if __name__ == "__main__":
     datasetpath = "data/datasettest/"
     datapath = {"image_path": datasetpath + "image/", "text_path": datasetpath + "text/text.csv",
                 "tabular_path": datasetpath + "tabular/data.csv"}
-    dataset = Dataset(datapath, name="Alldata2000RF")
+    dataset = Dataset(datapath, name="Alldata2000Test")
 
     data = generateTestData(dataset, dataset.name)
     print("End")
 
     '''
+    # theproperty.mutilprocess = False
+    # theproperty.thread = 20
     theproperty.dataframe = "pandas"
     print(getNowTimeStr())
-    datapath = {"image_path": None, "text_path": None, "tabular_path": "data/otherdatas/phpkIxskf.csv"}
-    dataset = Dataset(datapath, name="phpklxskf")
+    datapath = {"image_path": None, "text_path": None, "tabular_path": "data/otherdatas/diabetes.csv"}
+    dataset = Dataset(datapath, name="diabetes")
     data = FC(dataset, isiteration=True, iternums=1)
     if data is not None and theproperty.dataframe == "dask":
         data = data.compute()

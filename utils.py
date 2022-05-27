@@ -1,4 +1,7 @@
 import os
+
+import pandas as pd
+
 from Evaluation.WEvaluation.FoneEvaluation import FoneEvaluation
 from Evaluation.WEvaluation.LogLossEvaluation import LogLossEvaluation
 from Evaluation.FEvaluation.InformationGain import InformationGainFilterEvaluator
@@ -43,6 +46,7 @@ def getInfo(data):
     '''
     info = []
     lenofdata = len(data)
+    targetname = data.iloc[:, -1].name
     for i in data:
         name = i
         if data[name].dtype == "datetime64[ns]":
@@ -63,7 +67,7 @@ def getInfo(data):
             continue
 
         if data[name].dtype == "int64" or data[name].dtype == "int32":
-            if lensofvalues >= 30:
+            if lensofvalues >= 30 and name != targetname:
                 data[name].astype("float32")
                 columninfo = ColumnInfo(None, None, None, name, False, outputType.Numeric)
             else:
@@ -272,3 +276,27 @@ def pddMerge(data1: dd.DataFrame, data2: dd.DataFrame):
     for index in data2.columns:
         data1[index] = data2[index]
     return data1
+
+def processTestData(datadict, ):
+    testdata = datadict["data"]
+    if theproperty.dataframe == "pandas":
+        traindatapath = theproperty.rootpath + theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname\
+                    + "/" + theproperty.dataframe + theproperty.datasetname + ".csv"
+        traindata = pd.read_csv(traindatapath)
+    else:
+        traindatapath = theproperty.rootpath + theproperty.resultfilepath + theproperty.dataframe + theproperty.datasetname \
+                        + "/*"
+        traindata = dd.read_csv(traindatapath)
+    namelist = list(set(testdata) - set(traindata))
+    for name in namelist:
+        del testdata[name]
+    i = 0
+    for name in list(traindata.columns):
+        tempcolumns = testdata[name]
+        del testdata[name]
+        testdata.insert(i, tempcolumns.name, tempcolumns)
+        i = i + 1
+    datadict["data"] = testdata.copy()
+
+def execmyfunc(codes):
+    exec(codes)
