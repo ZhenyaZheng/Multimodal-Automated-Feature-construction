@@ -21,6 +21,8 @@ def getOperator(oplist, iglist):
             if opt not in alloplist:
                 logger.Error(opt + " is not define")
         oplist = alloplist
+    else:
+        oplist = alloplist
     if iglist is not None:
         oplist = list(set(oplist) - set(iglist))
     return [eval(opt + "()") for opt in oplist]

@@ -125,7 +125,7 @@ FC_page = html.Div(
                                 id='iternums',
                                 placeholder='2',
                                 type="number",
-                                value=1
+                                value=4
                             ),
                             dbc.Tooltip('是否进行迭代操作，是1，否0。',
                                         target='is_iter'),

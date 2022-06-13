@@ -197,8 +197,11 @@ def getDatadict(dataset, operatorbyself=None, operatorignore=None):
             textigoper = operatorignore["text"]
         if operatorignore.get("image") is not None:
             imageigoper = operatorignore["image"]
+    logger.Info(f"image_fc begin ,time is {datetime.datetime.now()}")
     image_fc = Image_FC(dataset.data_image, imageoper, imageigoper)
+    logger.Info(f"image_fc end ,time is {datetime.datetime.now()}\ntext_fc begin ,time is {datetime.datetime.now()}")
     text_fc = Text_FC(dataset.data_text, textoper, textigoper)
+    logger.Info(f"text_fc end ,time is {datetime.datetime.now()}")
     ##合并image、text和tabular
     if theproperty.dataframe == "dask":
         image_fc, text_fc = saveData(image_fc, text_fc)

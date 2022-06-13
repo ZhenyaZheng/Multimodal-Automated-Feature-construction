@@ -303,11 +303,11 @@ class OperatorManager:
         if numOfThread == 1:
             for ops in operators:
                 try:
-                    # if count > 300:
-                    #     break
+                    if count > theproperty.maxFEvaluationnums:
+                        break
                     count += 1
-                    if count % 100 == 0:
-                        logger.Info("analyzed " + str(count) + " attributes, and time is " + str(datetime.datetime.now()))
+                    if count % 1000 == 0:
+                        logger.Info(f"analyzed {count} / {min(len(operators), theproperty.maxFEvaluationnums)} attributes, and time is {datetime.datetime.now()}")
                     newcolumn = self.generateColumn(datadict["data"], ops)
                     if newcolumn is None or fevaluation is None:
                         logger.Info("generate column or fevaluation error!")

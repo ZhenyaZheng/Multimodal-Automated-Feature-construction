@@ -91,7 +91,7 @@ class MLAttributeManager:
     def getDatasetInstances(self, datadict):
         filename = datadict["data"].name + "_candidatedata.csv"
         logger.Info(f"start {filename} getDatasetInstances")
-        filepath = theproperty.rootpath + theproperty.datasetlocation + 'candidateattslist/' + filename
+        filepath = theproperty.rootpath + theproperty.datasetlocation  + filename
         if os.path.isfile(filepath):
             logger.Info(datadict["data"].name + "candidatedata has existed")
             if theproperty.dataframe == "dask":

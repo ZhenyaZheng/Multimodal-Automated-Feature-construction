@@ -142,22 +142,25 @@ def _FC_Iter_(datadict, unaryoperator_list: list, otheroperator_list: list, iter
                         return 0
 
                 if numofthread == 1:
+                    count = 0
                     for oop in otheroperators:
                         try:
-                            if(oop.getFScore() is not None and oop.getFScore() >= theproperty.fsocre and evaluationatts <= theproperty.maxevaluationattsperiter):
+                            if count >= theproperty.maxevaluationattsperiter:
+                                break
+                            if(oop.getFScore() is not None and oop.getFScore() >= theproperty.fsocre and evaluationatts[0] <= theproperty.maxevaluationattsperiter):
                                 datacopy = copy.deepcopy(datasetcopy)
                                 newcolumn = om.generateColumn(datacopy["data"], oop, False)
                                 if newcolumn is None:
                                     return 0
                                 wscore = wevaluation.produceScore(datacopy, tempcurrentclassifications, oop, newcolumn)
                                 oop.setWScore(wscore)
-                                evaluationatts += 1
+                                evaluationatts[0] += 1
                                 if theproperty.wsocre <= wscore:
-                                    logger.Info("chosen a operator :" + oop.getName())
+                                    #logger.Info("chosen a operator :" + oop.getName())
                                     toprankingoperators.append(oop)
 
-                                if(evaluationatts % 100 == 0):
-                                    logger.Info("evaluated " + str(evaluationatts) + " attributes, and time is " + str(datetime.datetime.now()))
+                                if(evaluationatts[0] % 100 == 0):
+                                    logger.Info("evaluated " + str(evaluationatts[0]) + " / " + str(min(len(otheroperators), theproperty.maxevaluationattsperiter)) + " attributes, and time is " + str(datetime.datetime.now()))
                             else:
                                 break
                         except Exception as ex:

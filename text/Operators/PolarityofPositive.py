@@ -42,7 +42,7 @@ class PolarityofPositive(TextOperator):
         newseries = [pol(i) for i in wordvec]
         series = pd.Series(newseries, name=self.getName(), dtype="int32")
         if theproperty.dataframe == "dask":
-            series = dd.from_pandas(theseries, npartitions=1).reset_index().iloc[:, -1]
+            series = dd.from_pandas(series, npartitions=1).reset_index().iloc[:, -1]
         return series
 
     def getName(self):

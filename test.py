@@ -71,19 +71,22 @@ if __name__ == "__main__":
     print(getNowTimeStr())
     print("End")
     '''
-    '''
+
     theproperty.dataframe = "pandas"
-    #theproperty.classifier = 'SVM'
+    theproperty.mutilprocess = True
+    #theproperty.thread = 1
     datasetpath = "data/datasettrain/"
+    print("main begin " + getNowTimeStr())
     datapath = {"image_path": datasetpath + "image/", "text_path": datasetpath + "text/text.csv", "tabular_path": datasetpath + "tabular/data.csv"}
-    dataset = Dataset(datapath, name="Alldata2000Test")
+    dataset = Dataset(datapath, name="Alldata2000Testprocess8")
 
     data = FC(dataset, isiteration=True, iternums=4)
     if data is not None and theproperty.dataframe == "dask":
         data = data.compute()
+    print("main end " + getNowTimeStr())
     print("End")
-    '''
 
+    '''
     theproperty.dataframe = "pandas"
     datasetpath = "data/datasettest/"
     datapath = {"image_path": datasetpath + "image/", "text_path": datasetpath + "text/text.csv",
@@ -92,7 +95,7 @@ if __name__ == "__main__":
 
     data = generateTestData(dataset, dataset.name)
     print("End")
-
+    '''
     '''
     # theproperty.mutilprocess = False
     # theproperty.thread = 20
